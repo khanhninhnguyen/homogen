@@ -2,7 +2,7 @@ rm(list = ls())
 # Main steps in homogenization 
 
 ## LIB
-library("GNSSfast")
+### uncomment to run segmentation 
 
 ## set path: modify the main path, data path and create:
 ## paths to: store code, result, metadata (if needed) and validation 
@@ -17,16 +17,20 @@ path_validation = paste0(path_results, "validation/")
 # SEGMENTATION ------------------------------------------------------------
 
 ## modify to choose list of stations
+# ind = c(1:100) # modify to choose list of station to be segmented 
+path_raw = paste0("/home/knguyen/data/Data/NGL/data/") 
+file_name = "scatterIWV3_0abi.txt"
+# file_path = paste0(path_NGL_ERA5, file_name)
 
-files = list.files(path_NGL_ERA5)
-name_full = substr(files,start = 1, stop = 4)
-
-## need to convert from txt to RData
-
+segment(path_txt = path_raw,
+        criterion = "BM_BJ",
+        list_file = list.files(path_raw)[1:2],
+        path_result = path_results)
 
 
 # VALIDATION --------------------------------------------------------------
-
+files = list.files(path_NGL_ERA5)
+name_full = substr(files,start = 1, stop = 4)
 
 # ATTRIBUTION -------------------------------------------------------------
 
