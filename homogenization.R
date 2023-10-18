@@ -2,6 +2,7 @@ rm(list = ls())
 # Main steps in homogenization 
 
 ## LIB
+library(dplyr)
 ### uncomment to run segmentation 
 
 ## set path: modify the main path, data path and create:

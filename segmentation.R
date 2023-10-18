@@ -97,7 +97,7 @@ segment <- function(path_txt, list_file, path_result, criterion, saved_RData = 0
                      mean = GNSS$seg[[criterion]]$mean)
     
     out_put <- list( Tmu = Tmu,
-                     Stdf = GNSS$funct[[criterion]],
+                     f = GNSS$funct[[criterion]],
                      Var = GNSS$variances,
                      Coeff = GNSS$coeff[[criterion]])
     
@@ -123,7 +123,36 @@ segment <- function(path_txt, list_file, path_result, criterion, saved_RData = 0
 ### extract specific info in txt file   CONTINUE TOMORROW
 extract_txt <- function(file.result){
   extract_res = extr_info
-  date_mean <- data.frame()
+  n_station = length(extract_res)
+  
+  # Date_mean 
+  
+  name_rep = sapply(extract_res, function(sublist) {
+    nrow(sublist$Tmu)
+  }) 
+  replicated_names <- rep(names(name_rep), times = name_rep)
+  
+  date_mean = sapply(extract_res, function(sublist) {
+    sublist[(names(sublist) %in% "Tmu")]
+  }) %>% 
+    bind_rows() %>% 
+    mutate(name = replicated_names)  %>% 
+    mutate(tbegin = as.Date(as.POSIXct(begin, 'GMT')),
+           tend = as.Date(as.POSIXct(end, 'GMT')),
+           mu = mean) %>% 
+    select(name, tbegin, tend, mu)
+
+  # Monthly_var
+  
+  monthly_var_stdf <- data.frame(replicate(12, numeric(0)))
+  list_month <- c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
+  colnames(monthly_var_stdf) <- list_month 
+  for (i in c(1:n_station)) {
+    monthly_var_stdf[i,] <- extract_res[[names(extract_res)[i]]]$Var
+  }
+  monthly_var_stdf$stdf = 
+
+  # Fourier 
   monthly_var_stdf <- data.frame()
   fourier_coef <- data.frame()
   
