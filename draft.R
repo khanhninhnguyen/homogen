@@ -122,3 +122,5 @@ extract_ngl <- function(fichier, path_file, name.folder) {
   return(Y)
 }
 
+a = read.table(file = paste0("/home/knguyen/Documents/PhD/Results/", "NGL6048.BM_BJ.date_mean.txt"), header = TRUE)
+

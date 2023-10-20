@@ -12,13 +12,15 @@
 #' @param saved_seg_ind do you want to save result of each station?
 #' 
 #' extract from segmentation results:
-#' 2 output files: 
+#' 3 output files: 
 #' * dataname.date_mean.txt: 
 #'  station name,   date of begin,   date of end,   mean of this segment 
 #' * dataname.monthly_var_stdf.txt
 #'  station name,   variance of each month,   std of functional  
 #' * dataname.coeff.txt
 #' station name,   4 Fourier coefficients 
+#' @param file_result result file from segment function
+#' @param path_result where to store results
 #' 
 
 library("GNSSfast")
@@ -121,8 +123,8 @@ segment <- function(path_txt, list_file, path_result, criterion, saved_RData = 0
 }
 
 ### extract specific info in txt file   CONTINUE TOMORROW
-extract_txt <- function(file.result){
-  extract_res = extr_info
+extract_txt <- function(file_result, path_result){
+  extract_res = file_result
   n_station = length(extract_res)
   
   # Date_mean 
@@ -150,12 +152,26 @@ extract_txt <- function(file.result){
   for (i in c(1:n_station)) {
     monthly_var_stdf[i,] <- extract_res[[names(extract_res)[i]]]$Var
   }
-  monthly_var_stdf$stdf = 
+  monthly_var_stdf$stdf = sapply(extract_res, function(sublist) {
+    sd(unlist(sublist[(names(sublist) %in% "Stdf")]), na.rm = TRUE)
+  })
 
   # Fourier 
-  monthly_var_stdf <- data.frame()
-  fourier_coef <- data.frame()
   
+  fourier_coef <- data.frame(replicate(8, numeric(0)))
+  colnames(fourier_coef) <- names(extract_res[[1]]$Coeff)
+  for (j in c(1:n_station)) {
+    fourier_coef[j,] <- extract_res[[names(extract_res)[j]]]$Coeff
+  }
+  
+  write.table(date_mean, file = paste0(path_results, "date_mean.txt"), 
+              sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+  
+  write.table(monthly_var_stdf, file = paste0(path_results, "monthly_var_stdf.txt"), 
+              sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+  
+  write.table(fourier_coef, file = paste0(path_results, "fourier_coef.txt"), 
+              sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 }
 
 
