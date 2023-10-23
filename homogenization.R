@@ -3,6 +3,8 @@ rm(list = ls())
 
 ## LIB
 library(dplyr)
+library(purrr)
+
 ### uncomment to run segmentation 
 
 ## set path: modify the main path, data path and create:
