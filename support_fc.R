@@ -56,12 +56,14 @@ convert_date <- function(date_vec){
 test1 <- function(main_brp, nearby_brps){
   min1 = main_brp - 10
   max1 = main_brp + 10
-  crenel_length = NA
+  crenel_pos = NA
   crenel = nearby_brps[nearby_brps > min1 & nearby_brps < max1]
   if(length(crenel) > 0){
-    crenel_length = max(abs(crenel - main_brp))
+    d = crenel - main_brp
+    crenel_pos = d[which.max(abs(d))]
   }
-  return(crenel_length)  
+  
+  return(crenel_pos)
 }
 
 test2 <- function(main_brp, nearby_brp){
