@@ -52,66 +52,20 @@ pre_select_nb <- function(path_data, seg_result, max_limit, min_limit, gap_per){
                             main_st = main_st, 
                             nearby_st = nearby_st,
                             name_six_diff = name_six_diff)
-  
+  df_data$Date <- as.Date(df_data$Date, format = "%Y-%m-%d")
   # Test 1 
 
   test_1 = test1(main_brp, nearby_brps)
   
   # Test 2 
   
-  
-  test2 <- function(main_brp, main_brps, df_data, nearby_brps, thres = 365, test_1){
-    
-    crenel_length_max = 62
-    closest_length_max = ifelse(is.na(test_1), 0, test_1) 
-    
-    main_ind = which(!is.na(df_data$GPS_ERA))
-    nearby_ind = which(!is.na(df_data$GPS1_ERA1))
-    
-    main_beg = df_data$Date[main_ind[1]]
-    main_end = df_data$Date[main_ind[length(main_ind)]]
-    
-    nearby_beg = df_data$Date[nearby_ind[1]]
-    nearby_end = df_data$Date[nearby_ind[length(nearby_ind)]]
-    
-    main_brps_m = c(main_brps,
-                    main_beg, main_end)
-    nearby_brps_m = c(nearby_brps, 
-                      nearby_beg, nearby_end)
-    
-    # look for 2 closest brps: remove other changepoints in 62 days 
-    
-    other_dist = abs(main_brps - main_brp)
-    noise = which(other_dist > 0 & other_dist < crenel_length_max)
-
-    if(length(noise)>0){
-      dist_noise = other_dist[noise][1]
-    }else{
-      dist_noise = 0
-    }
-    main_brp_min = main_brp - dist_noise
-    main_brp_max = main_brp + dist_noise
-    
-    main_beg_new <- max(main_brps_m[main_brps_m < main_brp_min])
-    main_end_new <- min(main_brps_m[main_brps_m > main_brp_max])
-    
-    # look for 2 closest brps more than 10 days in the nearby
-    
-    main_brp_min1 = ifelse(closest_length_max < 0, 
-      (main_brp - closest_length_max), main_brp)
-    main_brp_max1 = ifelse(closest_length_max > 0, 
-      (main_brp + closest_length_max), main_brp) 
-    
-    nearby_beg_new <- max(nearby_brps_m[nearby_brps_m < main_brp_min1])
-    nearby_end_new <- min(nearby_brps_m[nearby_brps_m > main_brp_max1])
-
-    out <- list(dist_noise = dist_noise, 
-                main_beg_new = main_beg_new, main_end_new = main_end_new,
-                nearby_beg_new = nearby_beg_new, nearby_end_new = nearby_end_new
-                )
-    return(out)
-  }
   test_2 = test2(main_brp, main_brps, df_data, nearby_brps, test_1 = test_1)
+  
+  test_3 = test3(df_data = df_data, test_1 = test_1, 
+                 main_beg = test_2$main_beg_new, 
+                 main_end = test_2$main_end_new,
+                 nearby_beg = test_2$nearby_beg_new,
+                 nearby_end = test_2$nearby_end_new)
 }
 
 
