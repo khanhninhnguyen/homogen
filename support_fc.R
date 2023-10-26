@@ -76,8 +76,7 @@ test1 <- function(main_brp, nearby_brps){
 test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1){
   
   crenel_length_max = 62
-  closest_length_max = ifelse(is.na(test_1), 0, test_1) 
-  
+
   main_ind = which(!is.na(df_data$GPS_ERA))
   nearby_ind = which(!is.na(df_data$GPS1_ERA1))
   
@@ -91,6 +90,18 @@ test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1){
                   main_beg, main_end)
   nearby_brps_m = c(nearby_brps, 
                     nearby_beg, nearby_end)
+  
+  # remove brpd which is coincident to main
+  main_brp_min1 = main_brp
+  main_brp_max1 = main_brp
+  
+  if(!is.na(test_1)){
+    if(test_1 < 0){
+      main_brp_min1 = main_brp + test_1 - 1
+    }else if(test_1 > 0){
+      main_brp_max1 = main_brp + test_1 + 1 
+    }
+  }
   
   # look for 2 closest brps: remove other changepoints in 62 days 
   
@@ -109,15 +120,19 @@ test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1){
   main_beg_new <- max(main_brps_m[main_brps_m < main_brp_min])
   main_end_new <- min(main_brps_m[main_brps_m > main_brp_max])
   
-  # look for 2 closest brps more than 10 days in the nearby
+  list_nearby_brpb <- nearby_brps_m[nearby_brps_m < main_brp_min1]
+  if(length(list_nearby_brpb) > 0){
+    nearby_beg_new <- max(list_nearby_brpb)
+  }else{
+    nearby_beg_new <- 0
+  }
   
-  main_brp_min1 = ifelse(closest_length_max < 0, 
-                         (main_brp - closest_length_max), main_brp)
-  main_brp_max1 = ifelse(closest_length_max > 0, 
-                         (main_brp + closest_length_max), main_brp) 
-  
-  nearby_beg_new <- max(nearby_brps_m[nearby_brps_m < main_brp_min1])
-  nearby_end_new <- min(nearby_brps_m[nearby_brps_m > main_brp_max1])
+  list_nearby_brpa <- nearby_brps_m[nearby_brps_m > main_brp_max1]
+  if(length(list_nearby_brpa) > 0){
+    nearby_end_new <- min(list_nearby_brpa)
+  }else{
+    nearby_end_new <- 0
+  }
   
   out <- list(dist_noise = dist_noise, 
               main_beg_new = main_beg_new, main_end_new = main_end_new,
