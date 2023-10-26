@@ -114,8 +114,8 @@ test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1){
   }else{
     dist_noise = 0
   }
-  main_brp_min = main_brp - dist_noise
-  main_brp_max = main_brp + dist_noise
+  main_brp_min = main_brp - abs(dist_noise)
+  main_brp_max = main_brp + abs(dist_noise)
   
   main_beg_new <- max(main_brps_m[main_brps_m < main_brp_min])
   main_end_new <- min(main_brps_m[main_brps_m > main_brp_max])
@@ -171,13 +171,23 @@ test3 <- function(main_brp, df_data, main_beg, main_end, nearby_beg, nearby_end,
   df3_bef = df_data[which(df_data$Date > beg_df & df_data$Date < main_brp),]
   df3_aft = df_data[which(df_data$Date >= main_brp & df_data$Date < end_df),]
   
+  if(all(is.na(df3_bef$GPS_GPS1))){
+    nb3_bef = 0
+  }else{
+    nb3_bef = nb_consecutive(list.day = df3_bef$Date, x = df3_bef[["GPS1_ERA"]])
+  }
+  
+  if(all(is.na(df3_aft$GPS_GPS1))){
+    nb3_aft = 0
+  }else{
+    nb3_aft = nb_consecutive(list.day = df3_aft$Date, x = df3_aft[["GPS1_ERA"]])
+  }
+  
   nb1_bef = nb_consecutive(list.day = df1_bef$Date, x = df1_bef[["GPS_ERA"]])
   nb2_bef = nb_consecutive(list.day = df2_bef$Date, x = df2_bef[["GPS1_ERA1"]])
-  nb3_bef = nb_consecutive(list.day = df3_bef$Date, x = df3_bef[["GPS1_ERA"]])
   
   nb1_aft = nb_consecutive(list.day = df1_aft$Date, x = df1_aft[["GPS_ERA"]])
   nb2_aft = nb_consecutive(list.day = df2_aft$Date, x = df2_aft[["GPS1_ERA1"]])
-  nb3_aft = nb_consecutive(list.day = df3_aft$Date, x = df3_aft[["GPS1_ERA"]])
   
   period1_aft = as.numeric(max(df1_aft$Date) - min(df1_aft$Date))
   period2_aft = as.numeric(max(df2_aft$Date) - min(df2_aft$Date))

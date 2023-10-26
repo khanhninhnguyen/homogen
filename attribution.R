@@ -61,7 +61,7 @@ pre_select_nb <- function(path_data, seg_result, max_limit, min_limit, gap_per){
                    r_nearby_aft = numeric(0),   
                    r_joint_aft = numeric(0))
 
-  for (i in c(1:length(list_main_inhomo))) {
+  for (i in c(21:length(list_main_inhomo))) {
     print(i)
     main_st = list_main_inhomo[i]
     main_brps = list_brp$brp[which(list_brp$name == main_st)]
@@ -81,11 +81,11 @@ pre_select_nb <- function(path_data, seg_result, max_limit, min_limit, gap_per){
         df_data$Date <- as.Date(df_data$Date, format = "%Y-%m-%d")
         # Test 1 
         
-        test_1 = test1(main_brp = main_brp, nearby_brps = nearby_brps)
+        test_1 <- test1(main_brp = main_brp, nearby_brps = nearby_brps)
         
         # Test 2 
         
-        test_2 = test2(main_brp = main_brp,
+        test_2 <- test2(main_brp = main_brp,
                        main_brps = main_brps, 
                        df_data = df_data,
                        nearby_brps = nearby_brps, 
@@ -94,7 +94,7 @@ pre_select_nb <- function(path_data, seg_result, max_limit, min_limit, gap_per){
           break
         }
         
-        test_3 = test3(main_brp = main_brp, df_data = df_data,
+        test_3 <- test3(main_brp = main_brp, df_data = df_data,
                        test_1 = test_1, dist_noise = test_2$dist_noise,
                        main_beg = test_2$main_beg_new, 
                        main_end = test_2$main_end_new,
@@ -112,7 +112,7 @@ pre_select_nb <- function(path_data, seg_result, max_limit, min_limit, gap_per){
     }
   }
 }
-
+# ERROR i = 54
 
 
 # CHARACTERIZATION --------------------------------------------------------
