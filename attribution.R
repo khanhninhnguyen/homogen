@@ -61,7 +61,7 @@ pre_select_nb <- function(path_data, seg_result, max_limit, min_limit, gap_per){
                    r_nearby_aft = numeric(0),   
                    r_joint_aft = numeric(0))
 
-  for (i in c(21:length(list_main_inhomo))) {
+  for (i in c(54:length(list_main_inhomo))) {
     print(i)
     main_st = list_main_inhomo[i]
     main_brps = list_brp$brp[which(list_brp$name == main_st)]
@@ -113,6 +113,7 @@ pre_select_nb <- function(path_data, seg_result, max_limit, min_limit, gap_per){
   }
 }
 # ERROR i = 54
+
 
 
 # CHARACTERIZATION --------------------------------------------------------

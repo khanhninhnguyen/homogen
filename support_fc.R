@@ -64,7 +64,7 @@ test1 <- function(main_brp, nearby_brps){
   min1 = main_brp - 10
   max1 = main_brp + 10
   crenel_pos = NA
-  crenel = nearby_brps[nearby_brps > min1 & nearby_brps < max1]
+  crenel = nearby_brps[nearby_brps >= min1 & nearby_brps <= max1]
   if(length(crenel) > 0){
     d = crenel - main_brp
     crenel_pos = d[which.max(abs(d))]
@@ -183,12 +183,22 @@ test3 <- function(main_brp, df_data, main_beg, main_end, nearby_beg, nearby_end,
     nb3_aft = nb_consecutive(list.day = df3_aft$Date, x = df3_aft[["GPS1_ERA"]])
   }
   
+  if(all(is.na(df2_bef$GPS1_ERA1))){
+    nb2_bef = 0
+  }else{
+    nb2_bef = nb_consecutive(list.day = df2_bef$Date, x = df2_bef[["GPS1_ERA1"]])
+  }
+  
+  if(all(is.na(df2_aft$GPS1_ERA1))){
+    nb2_aft = 0
+  }else{
+    nb2_aft = nb_consecutive(list.day = df2_aft$Date, x = df2_aft[["GPS1_ERA1"]])
+  }
+  
   nb1_bef = nb_consecutive(list.day = df1_bef$Date, x = df1_bef[["GPS_ERA"]])
-  nb2_bef = nb_consecutive(list.day = df2_bef$Date, x = df2_bef[["GPS1_ERA1"]])
-  
+
   nb1_aft = nb_consecutive(list.day = df1_aft$Date, x = df1_aft[["GPS_ERA"]])
-  nb2_aft = nb_consecutive(list.day = df2_aft$Date, x = df2_aft[["GPS1_ERA1"]])
-  
+
   period1_aft = as.numeric(max(df1_aft$Date) - min(df1_aft$Date))
   period2_aft = as.numeric(max(df2_aft$Date) - min(df2_aft$Date))
   period3_aft = as.numeric(max(df3_aft$Date) - min(df3_aft$Date))
