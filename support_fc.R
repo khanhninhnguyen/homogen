@@ -141,27 +141,48 @@ test3 <- function(main_brp, df_data, main_beg, main_end, nearby_beg, nearby_end,
   
   # check crenel in the main 
   
-  if(!is.na(dist_noise)){
+  if(dist_noise != 0){
     remove_ind = which(df_data$Date < min(main_brp, main_brp + dist_noise) & 
                          df_data$Date > max(main_brp, main_brp + dist_noise))
     df_data[remove_ind, !(names(df_data) == "GPS1_ERA1")] <- NA
   }
   
-  df1 = df_data[which(df_data$Date > main_beg & df_data$Date < main_end),]
-  df2 = df_data[which(df_data$Date > nearby_beg & df_data$Date < nearby_end),]
-  df3 = df_data[which(df_data$Date > beg_df & df_data$Date < end_df),]
+  df1_bef = df_data[which(df_data$Date > main_beg & df_data$Date < main_brp),]
+  df1_aft = df_data[which(df_data$Date >= main_brp & df_data$Date < main_end),]
   
-  nb1 = nb_consecutive(list.day = df1$Date, x = df1[["GPS_ERA"]])
-  nb2 = nb_consecutive(list.day = df2$Date, x = df2[["GPS1_ERA1"]])
-  nb3 = nb_consecutive(list.day = df3$Date, x = df3[["GPS1_ERA"]])
+  df2_bef = df_data[which(df_data$Date > nearby_beg & df_data$Date < main_brp),]
+  df2_aft = df_data[which(df_data$Date >= main_brp & df_data$Date < nearby_end),]
   
-  period_1 = as.numeric(max(df1$Date) - min(df1$Date))
-  period_2 = as.numeric(max(df1$Date) - min(df1$Date))
-  period_3 = as.numeric(max(df1$Date) - min(df1$Date))
-                                                                    
-  r1 = nb1/(period_1-1)
-  r2 = nb2/(period_2-1)
-  r3 = nb3/(period_3-1)
+  df3_bef = df_data[which(df_data$Date > beg_df & df_data$Date < main_brp),]
+  df3_aft = df_data[which(df_data$Date >= main_brp & df_data$Date < end_df),]
   
-  return(list(r_main = r1, r_nearby = r2, r_joint = r3))
+  nb1_bef = nb_consecutive(list.day = df1_bef$Date, x = df1_bef[["GPS_ERA"]])
+  nb2_bef = nb_consecutive(list.day = df2_bef$Date, x = df2_bef[["GPS1_ERA1"]])
+  nb3_bef = nb_consecutive(list.day = df3_bef$Date, x = df3_bef[["GPS1_ERA"]])
+  
+  nb1_aft = nb_consecutive(list.day = df1_aft$Date, x = df1_aft[["GPS_ERA"]])
+  nb2_aft = nb_consecutive(list.day = df2_aft$Date, x = df2_aft[["GPS1_ERA1"]])
+  nb3_aft = nb_consecutive(list.day = df3_aft$Date, x = df3_aft[["GPS1_ERA"]])
+  
+  period1_aft = as.numeric(max(df1_aft$Date) - min(df1_aft$Date))
+  period2_aft = as.numeric(max(df2_aft$Date) - min(df2_aft$Date))
+  period3_aft = as.numeric(max(df3_aft$Date) - min(df3_aft$Date))
+  
+  period1_bef = as.numeric(max(df1_bef$Date) - min(df1_bef$Date))
+  period2_bef = as.numeric(max(df2_bef$Date) - min(df2_bef$Date))
+  period3_bef = as.numeric(max(df3_bef$Date) - min(df3_bef$Date))
+  
+  r1_bef = nb1_bef/(period1_bef-1)
+  r2_bef = nb2_bef/(period2_bef-1)
+  r3_bef = nb3_bef/(period3_bef-1)
+  
+  r1_aft = nb1_aft/(period1_aft-1)
+  r2_aft = nb2_aft/(period2_aft-1)
+  r3_aft = nb3_aft/(period3_aft-1)
+  
+  return(list(
+    n_main_bef = nb1_bef, n_nearby_bef = nb2_bef, n_joint_bef = nb3_bef,
+    n_main_aft = nb1_aft, n_nearby_aft = nb2_aft, n_joint_aft = nb3_aft,
+    r_main_bef = r1_bef, r_nearby_bef = r2_bef, r_joint_bef = r3_bef,
+    r_main_aft = r1_aft, r_nearby_aft = r2_aft, r_joint_aft = r3_aft))
 }
