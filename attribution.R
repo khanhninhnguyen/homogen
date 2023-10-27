@@ -29,7 +29,7 @@ name_six_diff = c("GPS_ERA", "GPS_GPS1", "GPS_ERA1", "ERA_ERA1", "GPS1_ERA1", "G
 #' * limit by other brps 
 #' * keep very close changepoints
 #' * gap percentage
-pre_select_nb <- function(path_data, seg_result, max_limit, min_limit, gap_per){
+extract_info_nearby <- function(path_data, seg_result, max_limit, min_limit, gap_per){
   
   date_mean = read.table(file = paste0("/home/knguyen/Documents/PhD/Results/", "NGL6048.BM_BJ.date_mean.txt"), header = TRUE)
   list_all_pairs = unique(substr(list.files(path_data),6,14))
@@ -61,7 +61,7 @@ pre_select_nb <- function(path_data, seg_result, max_limit, min_limit, gap_per){
                    r_nearby_aft = numeric(0),   
                    r_joint_aft = numeric(0))
 
-  for (i in c(54:length(list_main_inhomo))) {
+  for (i in c(1:length(list_main_inhomo))) {
     print(i)
     main_st = list_main_inhomo[i]
     main_brps = list_brp$brp[which(list_brp$name == main_st)]

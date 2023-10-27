@@ -1,4 +1,36 @@
 #' additional functions in change-points attribution.
+get_clusters <- function(dates) {
+  
+  if(length(dates) == 1){
+    clusters_ind <- 0
+  } else{
+    clusters_ind <- rep(0, length(dates))
+  }
+
+  sorted_dates <- sort(dates)
+  clusters <- list()
+  current_cluster <- c()
+  
+  for (i in 1:length(sorted_dates)) {
+    if (length(current_cluster) == 0) {
+      current_cluster <- c(sorted_dates[i])
+    } else if (difftime(sorted_dates[i], tail(current_cluster, n = 1), units = "days") < 60) {
+      current_cluster <- c(current_cluster, sorted_dates[i])
+    } else {
+      clusters <- c(clusters, list(current_cluster))
+      current_cluster <- c(sorted_dates[i])
+    }
+  }
+  if (length(current_cluster) > 0) {
+    clusters <- c(clusters, list(current_cluster))
+  }
+  list_clusters = clusters %>%
+    keep(~ length(.) > 1)
+  # rename clusters_ind 
+  
+  return(clusters)
+}
+
 
 extract_list_brp <- function(date_time_list){
   
@@ -8,11 +40,14 @@ extract_list_brp <- function(date_time_list){
   
   filtered_list = filter(date_time_list, StationCount>1) 
   
+  # List breaks from segmentation
   list_brp = filtered_list %>% 
     group_by(name) %>%
     mutate(Sequence = row_number()) %>%
     filter(Sequence!=1) %>%
     mutate(brp = as.Date(begin, format = "%Y-%m-%d"))
+  
+  # remove the clusters of breaks by the first point
   
   List_brp = list_brp[, c("name", "brp")]
   
