@@ -1,36 +1,42 @@
 #' additional functions in change-points attribution.
-get_clusters <- function(dates) {
-  
+get_clusters <- function(dates, threshold) {
+  # dates must be sorted upward before
   if(length(dates) == 1){
     clusters_ind <- 0
   } else{
     clusters_ind <- rep(0, length(dates))
-  }
-
-  sorted_dates <- sort(dates)
-  clusters <- list()
-  current_cluster <- c()
-  
-  for (i in 1:length(sorted_dates)) {
-    if (length(current_cluster) == 0) {
-      current_cluster <- c(sorted_dates[i])
-    } else if (difftime(sorted_dates[i], tail(current_cluster, n = 1), units = "days") < 60) {
-      current_cluster <- c(current_cluster, sorted_dates[i])
-    } else {
+    sorted_dates <- sort(dates)
+    clusters <- list()
+    current_cluster <- c()
+    
+    for (i in 1:length(sorted_dates)) {
+      if (length(current_cluster) == 0) {
+        current_cluster <- c(sorted_dates[i])
+      } else if (difftime(sorted_dates[i], tail(current_cluster, n = 1), units = "days") < threshold) {
+        current_cluster <- c(current_cluster, sorted_dates[i])
+      } else {
+        clusters <- c(clusters, list(current_cluster))
+        current_cluster <- c(sorted_dates[i])
+      }
+    }
+    if (length(current_cluster) > 0) {
       clusters <- c(clusters, list(current_cluster))
-      current_cluster <- c(sorted_dates[i])
+    }
+    list_clusters = clusters %>%
+      keep(~ length(.) > 1)
+    # rename clusters_ind 
+    if(length(list_clusters) > 0){
+      for (j in (1:length(list_clusters))) {
+        clusterj = sort(list_clusters[[j]])
+        for (k in c(1:length(clusterj))) {
+          clusters_ind[which(dates == clusterj[k])] <- k
+        }
+      }
     }
   }
-  if (length(current_cluster) > 0) {
-    clusters <- c(clusters, list(current_cluster))
-  }
-  list_clusters = clusters %>%
-    keep(~ length(.) > 1)
-  # rename clusters_ind 
-  
-  return(clusters)
-}
 
+  return(clusters_ind)
+}
 
 extract_list_brp <- function(date_time_list){
   
@@ -108,10 +114,8 @@ test1 <- function(main_brp, nearby_brps){
   return(crenel_pos)
 }
 
-test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1){
+test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1, cluster_ind){
   
-  crenel_length_max = 62
-
   main_ind = which(!is.na(df_data$GPS_ERA))
   nearby_ind = which(!is.na(df_data$GPS1_ERA1))
   
@@ -138,17 +142,20 @@ test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1){
     }
   }
   
-  # look for 2 closest brps: remove other changepoints in 62 days 
-  
-  other_dist = main_brps - main_brp
-  noise = which(abs(other_dist) > 0 & abs(other_dist) < crenel_length_max)
-  
-  if(length(noise)>0){
-    dist_noise = other_dist[noise]
-    dist_noise = dist_noise[which.max(abs(dist_noise))]
-  }else{
+  main_brp_ind = which(main_brps == main_brp)
+  noise = cluster_ind[main_brp_ind]
+  if (noise == 1){
+    noise_ind = which(main_brps == main_brp)
+    diff_noise = diff(c(cluster_ind[-c(1:noise_ind)], 0))
+    cluster_end_ind = which(diff_noise<0)[1]
+    cluster_end = main_brps[(main_brp_ind + 1)]
+    dist_noise = cluster_end - main_brp
+    print(cluster_end)
+  } else{
     dist_noise = 0
   }
+  
+  # limit cluster
   main_brp_min = main_brp - abs(dist_noise)
   main_brp_max = main_brp + abs(dist_noise)
   
@@ -169,7 +176,7 @@ test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1){
     nearby_end_new <- 0
   }
   
-  out <- list(dist_noise = dist_noise, 
+  out <- list(dist_noise = dist_noise, noise = noise,
               main_beg_new = main_beg_new, main_end_new = main_end_new,
               nearby_beg_new = nearby_beg_new, nearby_end_new = nearby_end_new
   )
@@ -243,12 +250,12 @@ test3 <- function(main_brp, df_data, main_beg, main_end, nearby_beg, nearby_end,
   period3_bef = as.numeric(max(df3_bef$Date) - min(df3_bef$Date))
   
   r1_bef = nb1_bef/(period1_bef-1)
-  r2_bef = nb2_bef/(period2_bef-1)
-  r3_bef = nb3_bef/(period3_bef-1)
+  r2_bef = ifelse(period2_bef <= 1, 0, nb2_bef/(period2_bef-1))
+  r3_bef = ifelse(period2_bef <= 1, 0, nb3_bef/(period3_bef-1))
   
   r1_aft = nb1_aft/(period1_aft-1)
-  r2_aft = nb2_aft/(period2_aft-1)
-  r3_aft = nb3_aft/(period3_aft-1)
+  r2_aft = ifelse(period2_aft <= 1, 0, nb2_aft/(period2_aft-1))
+  r3_aft = ifelse(period3_aft <= 1, 0, nb3_aft/(period3_aft-1))
   
   return(list(
     n_main_bef = nb1_bef, n_nearby_bef = nb2_bef, n_joint_bef = nb3_bef,

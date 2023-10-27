@@ -4,6 +4,8 @@ rm(list = ls())
 ## LIB
 library(dplyr)
 library(purrr)
+library(ggplot2)
+library(tidyverse)
 
 ### uncomment to run segmentation 
 
