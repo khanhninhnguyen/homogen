@@ -36,32 +36,47 @@ list_brp = extract_list_brp(date_mean)
 list_brp <- list_brp %>%
   group_by(name) %>%
   mutate(cluster_index = get_clusters(brp, 80)) 
-infor_all = extract_info_nearby(path_data = path_data,
-                                list_brp = list_brp,
-                                path_results = path_results)
+# infor_all = extract_info_nearby(path_data = path_data,
+#                                 list_brp = list_brp,
+#                                 path_results = path_results)
 infor_all = read.table(file = paste0(path_results, "pre_info_test.txt"), 
                        header = TRUE)
-# add distance infor 
+# add distance infor, note that the number of points here is computed 
+# by distance between 2 dates, not remove the gaps,
+# brps from Olivier is the end of segment, mine is the begining of segment 
 rpt_data <- read.table(file = paste0(path_data, "support/liste_main20yr_1nearby_200km_500m_np250_nd250.rpt"),
-                       header = TRUE, check.names = FALSE)
-joint_data <- infor_all %>% 
-  left_join(rpt_data, 
-            by = join_by(main == name_main, 
-                         brp == t_break,
-                         nearby == name_nearby))
-#ERROR
-a = full_join(infor_all, rpt_data, by = join_by(main == name_main, 
-                                                brp == t_break,
-                                                nearby == name_nearby))
+                       header = TRUE, check.names = FALSE) 
+distance_list = unique(rpt_data[,c(1,3,13,14)])
 
-check_selected <- function(list_brp, infor_all, nb_min, distance, rate_consecutive){
+
+infor_all <- infor_all %>% 
+  left_join(distance_list, 
+            by = join_by(main == name_main, 
+                         nearby == name_nearby))
+
+#ERROR
+
+check_selected <- function(list_brp, infor_all, nbcsv_min, distance, rate_consecutive){
   filtered <- infor_all %>%
     # Remove noise 
-    filter(noise < 2) %>% 
-    filter()
-  
-  
+    filter(noise < 2, 
+           n_main_bef > nbcsv_min, 
+           n_nearby_bef > nbcsv_min, 
+           n_joint_bef > nbcsv_min, 
+           n_main_aft > nbcsv_min, 
+           n_nearby_aft > nbcsv_min, 
+           n_joint_aft > nbcsv_min,
+           dd < distance,
+           r_main_bef > rate_consecutive, 
+           r_nearby_bef > rate_consecutive, 
+           r_joint_bef > rate_consecutive, 
+           r_main_aft > rate_consecutive, 
+           r_nearby_aft > rate_consecutive, 
+           r_joint_aft > rate_consecutive)  
+  return(filtered)
 }
+
+
 
 df_long <- selected_brp[,c(11:22)] %>%
   gather(key = "variable", value = "value")

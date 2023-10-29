@@ -50,8 +50,8 @@ extract_list_brp <- function(date_time_list){
   list_brp = filtered_list %>% 
     group_by(name) %>%
     mutate(Sequence = row_number()) %>%
-    filter(Sequence!=1) %>%
-    mutate(brp = as.Date(begin, format = "%Y-%m-%d"))
+    filter(Sequence!=max(StationCount)) %>%
+    mutate(brp = as.Date(end, format = "%Y-%m-%d"))
   
   # remove the clusters of breaks by the first point
   
