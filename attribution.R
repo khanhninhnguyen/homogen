@@ -8,6 +8,8 @@ path_data_NGL = "/home/knguyen/data/Data/NGL-attribution/NGL/"
 list_six_diff = c("GPS-ERA", "GPS-GPS'", "GPS-ERA'", "ERA-ERA'", "GPS'-ERA'", "GPS'-ERA")
 name_six_diff = c("GPS_ERA", "GPS_GPS1", "GPS_ERA1", "ERA_ERA1", "GPS1_ERA1", "GPS1_ERA")
 source(file = paste0(path_code, "support_fc.R"))
+source(file = paste0(path_code, "support_data_characterization.R"))
+
 # order: GPS-ERA, GPS-GPS', GPS-ERA', ERA-ERA', GPS'-ERA', GPS'-ERA
   
 # DO THIS LATTER 
@@ -39,66 +41,106 @@ list_brp <- list_brp %>%
 # infor_all = extract_info_nearby(path_data = path_data_NGL,
 #                                 list_brp = list_brp,
 #                                 path_results = path_results)
+column_classes <- c("character", "Date", "character", rep("numeric",3),
+                    rep("Date", 4), rep("numeric", 12))
 infor_all = read.table(file = paste0(path_results, "pre_info_test.txt"), 
-                       header = TRUE)
-# add distance infor, note that the number of points here is computed 
+                       header = TRUE, colClasses = column_classes)
+# add distance infor, note that the number of points here is computed ----
 # by distance between 2 dates, not remove the gaps,
 # brps from Olivier is the end of segment, mine is the begining of segment 
 rpt_data <- read.table(file = paste0(path_data, "support/liste_main20yr_1nearby_200km_500m_np250_nd250.rpt"),
                        header = TRUE, check.names = FALSE) 
 distance_list = unique(rpt_data[,c(1,3,13,14)])
-
-
 infor_all <- infor_all %>% 
   left_join(distance_list, 
             by = join_by(main == name_main, 
                          nearby == name_nearby))
 
-#ERROR
+# check selection conditions
+check_selected(list_brp = list_brp, infor_all = infor_all,
+               nbcsv_min = 250, distance = 200, rate_consecutive = 0.9)
 
-check_selected <- function(list_brp, infor_all, nbcsv_min, distance, rate_consecutive){
-  filtered <- infor_all %>%
-    filter(noise < 2, 
-           n_main_bef > nbcsv_min, 
-           n_nearby_bef > nbcsv_min, 
-           n_joint_bef > nbcsv_min, 
-           n_main_aft > nbcsv_min, 
-           n_nearby_aft > nbcsv_min, 
-           n_joint_aft > nbcsv_min,
-           dd < distance,
-           r_main_bef > rate_consecutive, 
-           r_nearby_bef > rate_consecutive, 
-           r_joint_bef > rate_consecutive, 
-           r_main_aft > rate_consecutive, 
-           r_nearby_aft > rate_consecutive, 
-           r_joint_aft > rate_consecutive)  
-  # check the number of change-points can be tested per stations 
-  total_brp <- list_brp %>%
-    group_by(name) %>%
-    summarize(Count = n())
-  
-  filtered_brp <- infor_all %>%
-    group_by(main) %>%
-    summarize(Count = n())
-  
-  joint_df = left_join(filtered_brp, total_brp, by = join_by(main==name) ) %>%
-    mutate(rate = C)
-  
-  return(filtered)
-}
-
-
-
-df_long <- selected_brp[,c(11:22)] %>%
+df_long <- infor_all[,c(11:16)] %>%
   gather(key = "variable", value = "value")
 
 # Plot histograms for each column
 ggplot(df_long, aes(x = value)) +
-  geom_histogram(binwidth = 0.5, fill = "blue", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 200, fill = "blue", color = "black", alpha = 0.7) +
   facet_wrap(~ variable, scales = "free_y") +
   theme_minimal() +
   labs(title = "Histograms of Multiple Columns", x = "Value", y = "Frequency")
 
 # CHARACTERIZATION --------------------------------------------------------
+# includes 2 steps: 1.fit IGLS to get WLS residual 
+# 2. fit normalized residual to ARMA models 
+nbcsv_min = 250 
+infor_selected <- infor_all %>%
+  filter(noise < 2, 
+         n_main_bef > nbcsv_min, 
+         n_nearby_bef > nbcsv_min, 
+         n_joint_bef > nbcsv_min, 
+         n_main_aft > nbcsv_min, 
+         n_nearby_aft > nbcsv_min, 
+         n_joint_aft > nbcsv_min)
 
+Four_coef = data.frame(matrix(NA, ncol = 60, nrow = nrow(infor_selected)))
+ARMA_order <- data.frame(matrix(NA, ncol = 18, nrow = nrow(infor_selected)))
+ARMA_coef <- data.frame(matrix(NA, ncol = 24, nrow = nrow(infor_selected)))
 
+for (i in c(1:nrow(infor_selected))) {
+  main_st = infor_selected$main[i]
+  nearby_st = infor_selected$nearby[i]
+  df_data = read_data_new(path_data = path_data_NGL,
+                          main_st = main_st, 
+                          nearby_st = nearby_st,
+                          name_six_diff = name_six_diff)
+  df_data$Date <- as.Date(df_data$Date, format = "%Y-%m-%d")
+  
+  beg <- min(infor_selected$main_beg_new[i], infor_selected$nearby_beg_new[i])
+  end <- max(infor_selected$main_end_new[i], infor_selected$nearby_end_new[i])
+  
+  beg_m <- max(infor_selected$main_beg_new[i], infor_selected$nearby_beg_new[i])
+  end_m <- min(infor_selected$main_end_new[i], infor_selected$nearby_end_new[i])
+  # replace outside values by NA
+  df_data <- df_data %>%
+    filter(Date >= beg & Date <= end) %>%
+    mutate(
+      GPS_ERA = ifelse(Date < infor_selected$main_beg_new[i] |
+                         Date > infor_selected$main_end_new[i], NA, GPS_ERA),
+      GPS_GPS1 = ifelse(Date < beg_m | Date > end_m, NA, GPS_GPS1),
+      GPS_ERA1 = ifelse(Date < beg_m | Date > end_m, NA, GPS_ERA1),
+      ERA_ERA1 = ifelse(Date < beg_m | Date > end_m, NA, ERA_ERA1),
+      GPS1_ERA1 = ifelse(Date < infor_selected$nearby_beg_new[i] |
+                           Date > infor_selected$nearby_end_new[i], NA, GPS1_ERA1),
+      GPS1_ERA = ifelse(Date < beg_m | Date > end_m, NA, GPS1_ERA),
+    )
+  
+  Res_IWLS = df_data %>% select(Date)
+  brp_ind = which(df_data$Date == infor_selected$brp[i])
+  
+  for (j in c(1:6)) {
+    name.series0 = name_six_diff[j]
+    m = construct_design(df_data, name.series = name.series0, break.ind = brp_ind)
+    tol0 = 0.01
+    if(i == 49 & j ==5){ tol0 = 0.0001 }
+    fit.igls = IGLS(design.m = m, tol =  tol0, day.list = df_data$Date)
+    norm_res = unlist(fit.igls$residual)/sqrt(unlist(fit.igls$var))
+    arima_fit = fit.arima(norm_res)
+    
+    Res_IWLS[, paste0(name.series0, '_var')] <- unlist(fit.igls$var)
+    Res_IWLS[, paste0(name.series0, '_res')] <- unlist(fit.igls$residual)
+    ARMA_order[i,c((3*j-2):(3*j))] = arima_fit$pq
+    ARMA_coef[i,c((4*j-3):(4*j))] = arima_fit$coef
+    Four_coef[i,c((10*j-9):(10*j))] = fit.igls$coefficients
+  }
+  print(i)
+}
+
+write.table(Res_IWLS, file = paste0(path_results, "Res_IWLS.txt"), 
+            sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+write.table(order_arma, file = paste0(path_results, "order_arma.txt"), 
+            sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+write.table(coef_arma, file = paste0(path_results, "coef_arma.txt"), 
+            sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+write.table(Four_coef, file = paste0(path_results, "Four_coef.txt"), 
+            sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)

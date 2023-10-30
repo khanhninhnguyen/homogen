@@ -270,7 +270,6 @@ extract_info_nearby <- function(path_data, list_brp, path_results){
   list_main = substr(list_all_pairs,1,4)
   list_nearby = substr(list_all_pairs,6,9)
   
-  # after removed cluster of breaks by the first
   list_main_unique = unique(list_main)
   list_main_inhomo = list_main_unique[which(list_main_unique %in% list_brp$name)]
   
@@ -354,6 +353,49 @@ extract_info_nearby <- function(path_data, list_brp, path_results){
   write.table(out, file = paste0(path_results, "pre_info_test.txt"), 
               sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
   
+  
+  return(out)
+}
+
+check_selected <- function(list_brp, infor_all, nbcsv_min, distance, rate_consecutive){
+  filtered <- infor_all %>%
+    filter(noise < 2, 
+           n_main_bef > nbcsv_min, 
+           n_nearby_bef > nbcsv_min, 
+           n_joint_bef > nbcsv_min, 
+           n_main_aft > nbcsv_min, 
+           n_nearby_aft > nbcsv_min, 
+           n_joint_aft > nbcsv_min,
+           dd < distance,
+           r_main_bef > rate_consecutive, 
+           r_nearby_bef > rate_consecutive, 
+           r_joint_bef > rate_consecutive, 
+           r_main_aft > rate_consecutive, 
+           r_nearby_aft > rate_consecutive, 
+           r_joint_aft > rate_consecutive)  
+  # check the number of change-points can be tested per stations 
+  total_brp <- list_brp %>%
+    group_by(name) %>%
+    summarize(Count = n())
+  
+  filtered_brp <- unique( filtered[,c(1:2)]) %>%
+    group_by(main) %>%
+    summarize(Count = n())
+  
+  filtered_nb <- unique( filtered[,c(1:3)]) %>%
+    group_by(main,brp) %>%
+    summarize(Count = n())
+  
+  joint_df = left_join(filtered_brp, total_brp, by = join_by(main==name) ) %>%
+    mutate(rate = Count.x/Count.y)
+  
+  out <- list(nb_main = length(unique(filtered_brp$main)),
+              nb_nb = length(unique(filtered$nearby)),
+              total_tested_brp = sum(joint_df$Count.x),
+              total_brp = sum(joint_df$Count.y),
+              nb_triplet = nrow(filtered), 
+              full_main = nrow(joint_df[which(joint_df$rate==1),]),
+              rate = summary(filtered_nb$Count))
   
   return(out)
 }

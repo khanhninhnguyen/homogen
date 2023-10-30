@@ -1,21 +1,23 @@
+one.year=365
+
 remove_na_2sides <- function(df, name.series){
   a = which(is.na(df[name.series])== FALSE)
   df = df[c(min(a):(max(a))), ]
   return(df)
 }
 
-construct.design <- function(data.df, name.series){
-  Data.mod <- data.df %>% dplyr::select(name.series,date) %>%
+construct_design <- function(data.df, name.series, break.ind, one.year = 365){
+  Data.mod <- data.df %>% dplyr::select(name.series,Date) %>%
     rename(signal=name.series) %>% 
     mutate(complete.time=1:nrow(data.df)) %>% 
-    dplyr::select(-date)
+    dplyr::select(-Date)
   for (i in 1:4){
     eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
   }
   Data.mod <- Data.mod %>% dplyr::select(-complete.time)
-  n0 = nrow(Data.mod)/2
-  Data.mod$right = rep(c(0,1), each=n0)
-  Data.mod$left = rep(c(1,0), each=n0)
+  n0 = nrow(data.df)
+  Data.mod$right = c(rep(0, break.ind), rep(1, (n0-break.ind)))
+  Data.mod$left = rep(1, n0)
   
   return(Data.mod)
 }
@@ -37,7 +39,7 @@ IGLS <- function(design.m, tol, day.list){
   i=0
   while (change1 > tol) {
     design.m$w = w0^2
-    gls.fit = eval(parse(text=paste0("gls(",mod.expression,",data=design.m, correlation = NULL, na.action = na.omit, weights=varFixed(value = ~w)",")")))
+    gls.fit = eval(parse(text=paste0("nlme::gls(",mod.expression,",data=design.m, correlation = NULL, na.action = na.omit, weights=varFixed(value = ~w)",")")))
     change1 = sum((gls.fit$coefficients - old.coef)^2)
     # deg =  cbind(rep(1, nrow(design.m)), as.matrix(design.m[,c(2:9)])) 
     fit.val = as.matrix(design.m[,list.para]) %*% as.matrix(gls.fit$coefficients)
@@ -48,7 +50,7 @@ IGLS <- function(design.m, tol, day.list){
     i=1+i
   }
   print(i)
-  return(list( coefficients = gls.fit$coefficients, var = w0^2, residual = resi0, fit = fit.val))
+  return(list( coefficients = gls.fit$coefficients, var = w0^2, residual = as.numeric(resi0)))
 }
 
 # heteroskedascity
@@ -80,6 +82,17 @@ diff.range.var <- function(x, day.list,s){
   }
 }
 
+p.and.coef <- function(fitARIMA, pq1, nb.or){
+  test.sig = lmtest::coeftest(fitARIMA)
+  ord = pq1[c(1,3)]
+  orde = c(rbind(ord,ord-1))
+  orde[which(orde <0)] <- 0
+  ind.param = which(orde >0)
+  orde[ind.param] <- fitARIMA$coef[1:nb.or]
+  p.value <- rep(-1, 4)
+  p.value[ ind.param] <- test.sig[,4][1:nb.or]
+  return(list(p.value = p.value , coef = orde))
+}
 # arima 
 last_signif <- function(signal, pq, alpha, fit.b){  
   nb.or <- sum(pq)
@@ -100,7 +113,6 @@ last_signif <- function(signal, pq, alpha, fit.b){
   }
   return(list( pq = pq, pandcoef = pandcoef))
 }
-
 diff.var <- function(name.test){
   if(name.test == "gps.gps"){
     varname = c("GPS.x", "GPS.y")
@@ -124,7 +136,7 @@ diff.var <- function(name.test){
 }
 
 p.and.coef <- function(fitARIMA, pq1, nb.or){
-  test.sig = coeftest(fitARIMA)
+  test.sig = lmtest::coeftest(fitARIMA)
   ord = pq1[c(1,3)]
   orde = c(rbind(ord,ord-1))
   orde[which(orde <0)] <- 0
@@ -156,7 +168,7 @@ model.iden <- function(order){
   return(model)
 }
 
-fit.arma11 <- function(signal.test){
+fit.arma11 <- function(signal.test, significant.level = 0.05){
   fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean = FALSE,lambda = NULL,
                                max.p = 2, max.q = 2, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
   
@@ -235,6 +247,41 @@ RobEstiSlidingVariance.S <- function(Y, name.var, alpha, estimator, length.wind)
   sigma.est = s[which(Y1$date %in% Y$date)]
   return(sigma.est)
 }
+my.estimator <- function(estimator,x){
+  x1 = na.omit(x)
+  if(estimator == "mad"){
+    n0 = length(x1)
+    f <- qnorm(3/4)*(1-0.7612/n0 - 1.123/(n0^2))
+    y = mad(x1, constant = 1/f)
+  }else if(estimator == "Qn"){
+    y = robustbase::Qn(x1)
+  }else if(estimator == "Sca"){
+    y = robustbase::scaleTau2(x1, consistency = "finiteSample")
+  }
+  return(y)
+}
 
-
+fit.arima <- function(signal.test, significant.level = 0.05){
+  fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+                               max.p = 2, max.q = 2, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
+  
+  pq <- forecast::arimaorder(fit.b)
+  # order.init[k, c((testi*3-2): (testi*3))] <- pq
+  # options(warn = 2)
+  
+  refit0 = last_signif(signal = signal.test, pq, alpha = significant.level, fit.b = fit.b)
+  pq = refit0$pq
+  
+  if( any(pq > 1)){
+    fit.b = forecast::auto.arima( signal.test, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+                                  max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
+    pq = forecast::arimaorder(fit.b)
+  }
+  test.pq = pq
+  refit1 = last_signif(signal = signal.test, pq, alpha = significant.level, fit.b = fit.b)
+  
+  pq = refit1$pq
+  if(identical(as.numeric(test.pq),pq) == FALSE){print(c(test.pq,pq))}
+  return(list(pq = pq, coef = refit1$pandcoef$coef, p = refit1$pandcoef$p.value))
+}
 
