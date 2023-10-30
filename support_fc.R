@@ -135,11 +135,13 @@ test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1, cluster_ind
   main_brp_max1 = main_brp
   
   if(!is.na(test_1)){
-    if(test_1 < 0){
-      main_brp_min1 = main_brp + test_1 - 1
-    }else if(test_1 > 0){
-      main_brp_max1 = main_brp + test_1 + 1 
-    }
+    # if(test_1 < 0){
+    #   main_brp_min1 = main_brp + test_1 - 1
+    # }else if(test_1 > 0){
+    #   main_brp_max1 = main_brp + test_1 + 1 
+    # }
+    main_brp_min1 = main_brp - abs(as.numeric(test_1)) - 1
+    main_brp_max1 = main_brp + abs(as.numeric(test_1)) + 1 
   }
   
   main_brp_ind = which(main_brps == main_brp)
@@ -150,7 +152,6 @@ test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1, cluster_ind
     cluster_end_ind = which(diff_noise<0)[1]
     cluster_end = main_brps[(main_brp_ind + 1)]
     dist_noise = cluster_end - main_brp
-    print(cluster_end)
   } else{
     dist_noise = 0
   }
@@ -158,7 +159,6 @@ test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1, cluster_ind
   # limit cluster
   main_brp_min = main_brp - abs(dist_noise)
   main_brp_max = main_brp + abs(dist_noise)
-  
   main_beg_new <- max(main_brps_m[main_brps_m < main_brp_min])
   main_end_new <- min(main_brps_m[main_brps_m > main_brp_max])
   
@@ -191,9 +191,9 @@ test3 <- function(main_brp, df_data, main_beg, main_end, nearby_beg, nearby_end,
   
   # remove points when brp in the main and nearby coincident
   if(!is.na(test_1)){
-    remove_ind = which(df_data$Date < min(main_brp, main_brp + test_1) & 
-                        df_data$Date > max(main_brp, main_brp + test_1))
-    df_data[remove_ind, !(names(df_data) == "GPS_ERA")] <- NA
+    remove_ind = which(df_data$Date < min(main_brp, main_brp - abs(as.numeric(test_1))) & 
+                        df_data$Date > max(main_brp, main_brp + abs(as.numeric(test_1))))
+    df_data[remove_ind, !(names(df_data) %in% c("Date", "GPS1_ERA1"))] <- NA
   }
   
   # check crenel in the main 
@@ -201,7 +201,7 @@ test3 <- function(main_brp, df_data, main_beg, main_end, nearby_beg, nearby_end,
   if(dist_noise != 0){
     remove_ind = which(df_data$Date < min(main_brp, main_brp + dist_noise) & 
                          df_data$Date > max(main_brp, main_brp + dist_noise))
-    df_data[remove_ind, !(names(df_data) == "GPS1_ERA1")] <- NA
+    df_data[remove_ind, !(names(df_data) %in% c("Date","GPS_ERA"))] <- NA
   }
   
   df1_bef = df_data[which(df_data$Date > main_beg & df_data$Date < main_brp),]
@@ -244,7 +244,7 @@ test3 <- function(main_brp, df_data, main_beg, main_end, nearby_beg, nearby_end,
   period1_aft = as.numeric(max(df1_aft$Date) - min(df1_aft$Date))
   period2_aft = as.numeric(max(df2_aft$Date) - min(df2_aft$Date))
   period3_aft = as.numeric(max(df3_aft$Date) - min(df3_aft$Date))
-  
+
   period1_bef = as.numeric(max(df1_bef$Date) - min(df1_bef$Date))
   period2_bef = as.numeric(max(df2_bef$Date) - min(df2_bef$Date))
   period3_bef = as.numeric(max(df3_bef$Date) - min(df3_bef$Date))
@@ -331,7 +331,6 @@ extract_info_nearby <- function(path_data, list_brp, path_results){
         if(test_2$nearby_beg_new ==0 | test_2$nearby_end_new == 0){
           break
         }
-        
         test_3 <- test3(main_brp = main_brp, df_data = df_data,
                         test_1 = test_1, dist_noise = test_2$dist_noise,
                         main_beg = test_2$main_beg_new, 

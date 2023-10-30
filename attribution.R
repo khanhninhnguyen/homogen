@@ -36,7 +36,7 @@ list_brp = extract_list_brp(date_mean)
 list_brp <- list_brp %>%
   group_by(name) %>%
   mutate(cluster_index = get_clusters(brp, 80)) 
-# infor_all = extract_info_nearby(path_data = path_data,
+# infor_all = extract_info_nearby(path_data = path_data_NGL,
 #                                 list_brp = list_brp,
 #                                 path_results = path_results)
 infor_all = read.table(file = paste0(path_results, "pre_info_test.txt"), 
@@ -58,7 +58,6 @@ infor_all <- infor_all %>%
 
 check_selected <- function(list_brp, infor_all, nbcsv_min, distance, rate_consecutive){
   filtered <- infor_all %>%
-    # Remove noise 
     filter(noise < 2, 
            n_main_bef > nbcsv_min, 
            n_nearby_bef > nbcsv_min, 
@@ -73,6 +72,18 @@ check_selected <- function(list_brp, infor_all, nbcsv_min, distance, rate_consec
            r_main_aft > rate_consecutive, 
            r_nearby_aft > rate_consecutive, 
            r_joint_aft > rate_consecutive)  
+  # check the number of change-points can be tested per stations 
+  total_brp <- list_brp %>%
+    group_by(name) %>%
+    summarize(Count = n())
+  
+  filtered_brp <- infor_all %>%
+    group_by(main) %>%
+    summarize(Count = n())
+  
+  joint_df = left_join(filtered_brp, total_brp, by = join_by(main==name) ) %>%
+    mutate(rate = C)
+  
   return(filtered)
 }
 
