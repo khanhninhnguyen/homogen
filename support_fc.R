@@ -318,7 +318,6 @@ extract_info_nearby <- function(path_data, list_brp, path_results){
         # Test 1 
         
         test_1 <- test1(main_brp = main_brp, nearby_brps = nearby_brps)
-        
         # Test 2 
         
         test_2 <- test2(main_brp = main_brp,
@@ -327,23 +326,22 @@ extract_info_nearby <- function(path_data, list_brp, path_results){
                         nearby_brps = nearby_brps, 
                         test_1 = test_1,
                         cluster_ind = cluster_indi)
-        if(test_2$nearby_beg_new ==0 | test_2$nearby_end_new == 0){
-          break
+        if(test_2$nearby_beg_new !=0 & test_2$nearby_end_new != 0){
+          test_3 <- test3(main_brp = main_brp, df_data = df_data,
+                          test_1 = test_1, dist_noise = test_2$dist_noise,
+                          main_beg = test_2$main_beg_new, 
+                          main_end = test_2$main_end_new,
+                          nearby_beg = test_2$nearby_beg_new,
+                          nearby_end = test_2$nearby_end_new)
+          
+          out_ind = data.frame(main = main_st, brp = main_brp, nearby = nearby_st,
+                               coincident = test_1)
+          out_ind_all = out_ind %>% 
+            bind_cols(as.data.frame(test_2)) %>% 
+            bind_cols(as.data.frame(test_3))
+          out <- out %>% 
+            rbind(out_ind_all)
         }
-        test_3 <- test3(main_brp = main_brp, df_data = df_data,
-                        test_1 = test_1, dist_noise = test_2$dist_noise,
-                        main_beg = test_2$main_beg_new, 
-                        main_end = test_2$main_end_new,
-                        nearby_beg = test_2$nearby_beg_new,
-                        nearby_end = test_2$nearby_end_new)
-        
-        out_ind = data.frame(main = main_st, brp = main_brp, nearby = nearby_st,
-                             coincident = test_1)
-        out_ind_all = out_ind %>% 
-          bind_cols(as.data.frame(test_2)) %>% 
-          bind_cols(as.data.frame(test_3))
-        out <- out %>% 
-          rbind(out_ind_all)
       }
     }
   }

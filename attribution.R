@@ -12,6 +12,7 @@ source(file = paste0(path_code, "support_data_characterization.R"))
 
 # order: GPS-ERA, GPS-GPS', GPS-ERA', ERA-ERA', GPS'-ERA', GPS'-ERA
   
+
 # DO THIS LATTER 
 # screening <- function(path_data, path_seg_res, path_result, 
 #                       window_length = 60, min_nb_points, max_coincide){
@@ -38,9 +39,9 @@ list_brp = extract_list_brp(date_mean)
 list_brp <- list_brp %>%
   group_by(name) %>%
   mutate(cluster_index = get_clusters(brp, 80)) 
-# infor_all = extract_info_nearby(path_data = path_data_NGL,
-#                                 list_brp = list_brp,
-#                                 path_results = path_results)
+infor_all = extract_info_nearby(path_data = path_data_NGL,
+                                list_brp = list_brp,
+                                path_results = path_results)
 column_classes <- c("character", "Date", "character", rep("numeric",3),
                     rep("Date", 4), rep("numeric", 12))
 infor_all = read.table(file = paste0(path_results, "pre_info_test.txt"), 
@@ -51,6 +52,7 @@ infor_all = read.table(file = paste0(path_results, "pre_info_test.txt"),
 rpt_data <- read.table(file = paste0(path_data, "support/liste_main20yr_1nearby_200km_500m_np250_nd250.rpt"),
                        header = TRUE, check.names = FALSE) 
 distance_list = unique(rpt_data[,c(1,3,13,14)])
+
 infor_all <- infor_all %>% 
   left_join(distance_list, 
             by = join_by(main == name_main, 
