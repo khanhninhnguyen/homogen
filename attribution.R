@@ -43,7 +43,7 @@ list_brp <- list_brp %>%
 #                                 path_results = path_results)
 column_classes <- c("character", "Date", "character", rep("numeric",3),
                     rep("Date", 4), rep("numeric", 12))
-infor_all = read.table(file = paste0(path_results, "pre_info_test.txt"), 
+infor_all = read.table(file = paste0(path_results, "clean_version/pre_info_test.txt"), 
                        header = TRUE, colClasses = column_classes)
 # add distance infor, note that the number of points here is computed ----
 # by distance between 2 dates, not remove the gaps,
@@ -92,6 +92,12 @@ infor_selected <- infor_all %>%
          n_main_aft > nbcsv_min, 
          n_nearby_aft > nbcsv_min, 
          n_joint_aft > nbcsv_min)
+# keep only 10 closest nearby stations 
+infor_selected <- infor_selected %>%
+  group_by(main, brp) %>%
+  arrange(dd, .by_group = TRUE) %>%
+  slice_head(n = 10) %>%
+  ungroup()
 
 Four_coef = data.frame(matrix(NA, ncol = 60, nrow = nrow(infor_selected)))
 ARMA_order <- data.frame(matrix(NA, ncol = 18, nrow = nrow(infor_selected)))
