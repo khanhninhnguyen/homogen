@@ -151,18 +151,22 @@ for (i in c(1:nrow(infor_selected))) {
     Res_IWLS[, paste0(name.series0, '_res')] <- fit_igls_res
     
     ARMA_order[i,c((3*j-2):(3*j))] = arima_fit$pq
-    ARMA_coef[i,c((4*j-3):(4*j))] = arima_fit$coef
-    Four_coef[i,c((10*j-9):(10*j))] = fit_igls$coefficients
+    ARMA_coef[i,c((4*j-3):(4*j))] = round(arima_fit$coef, digits = 4)
+    Four_coef[i,c((10*j-9):(10*j))] = round(fit_igls$coefficients, digits = 4)
   }
-  Res_iwls[[paste(
-    infor_all[i, 1], 
-    format(infor_all[i, 2], "%Y-%m-%d"), 
-    infor_all[i, 3], sep = ".")]] <- Res_IWLS
+  # Res_iwls[[paste(
+  #   infor_all[i, 1], 
+  #   format(infor_all[i, 2], "%Y-%m-%d"), 
+  #   infor_all[i, 3], sep = ".")]] <- Res_IWLS
+  name_case = paste(infor_all[i, 1],
+                    format(infor_all[i, 2], "%Y-%m-%d"), 
+                    infor_all[i, 3], sep = ".")
+  save(Res_IWLS, 
+       file = paste0(path_results, "Res_IWLS_", name_case, ".RData"))
+  
   print(i)
 }
 
-write.table(Res_IWLS, file = paste0(path_results, "Res_IWLS.txt"), 
-            sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 write.table(ARMA_order, file = paste0(path_results, "order_arma.txt"), 
             sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 write.table(ARMA_coef, file = paste0(path_results, "coef_arma.txt"), 
