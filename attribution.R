@@ -96,6 +96,7 @@ infor_selected <- infor_all %>%
 Four_coef = data.frame(matrix(NA, ncol = 60, nrow = nrow(infor_selected)))
 ARMA_order <- data.frame(matrix(NA, ncol = 18, nrow = nrow(infor_selected)))
 ARMA_coef <- data.frame(matrix(NA, ncol = 24, nrow = nrow(infor_selected)))
+Res_iwls <- list()
 
 for (i in c(1:nrow(infor_selected))) {
   main_st = infor_selected$main[i]
@@ -153,14 +154,18 @@ for (i in c(1:nrow(infor_selected))) {
     ARMA_coef[i,c((4*j-3):(4*j))] = arima_fit$coef
     Four_coef[i,c((10*j-9):(10*j))] = fit_igls$coefficients
   }
+  Res_iwls[[paste(
+    infor_all[i, 1], 
+    format(infor_all[i, 2], "%Y-%m-%d"), 
+    infor_all[i, 3], sep = ".")]] <- Res_IWLS
   print(i)
 }
 
 write.table(Res_IWLS, file = paste0(path_results, "Res_IWLS.txt"), 
             sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
-write.table(order_arma, file = paste0(path_results, "order_arma.txt"), 
+write.table(ARMA_order, file = paste0(path_results, "order_arma.txt"), 
             sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
-write.table(coef_arma, file = paste0(path_results, "coef_arma.txt"), 
+write.table(ARMA_coef, file = paste0(path_results, "coef_arma.txt"), 
             sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 write.table(Four_coef, file = paste0(path_results, "Four_coef.txt"), 
             sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
