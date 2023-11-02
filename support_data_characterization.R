@@ -285,3 +285,89 @@ fit.arima <- function(signal.test, significant.level = 0.05){
   return(list(pq = pq, coef = refit1$pandcoef$coef, p = refit1$pandcoef$p.value))
 }
 
+plot_for_papar <- function(arma_order, arma_coef, list_infor, name_six_diff){
+  order_arma = read.table(file = paste0(path_results, "order_arma.txt"), header = TRUE)
+  coef_arma = read.table(file = paste0(path_results, "coef_arma.txt"), header = TRUE)
+  
+  list_model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
+  
+  text1 = "Distance < 50 km"
+  text2 = "Distance > 50 km"
+  
+  length_data =nrow(list_infor)
+  six_model = data.frame(matrix(NA, ncol = 6, nrow = length_data))
+  for (i in 1:6) {
+    six_model[,i] = sapply(c(1:length_data), function(x) {
+      model.iden(as.numeric(unlist(order_arma[x, (3*i-2):(3*i)])))
+    })
+  }
+  colnames(six_model) <- name_six_diff
+  
+  six_values = c()
+  for (i in 1:6) {
+    value_count = sapply(c(list_model), function(x) length(which(six_model[,i] == x)))
+    six_values <- c( six_values, value_count)
+  }
+  
+  all_model <- cbind(list_infor[,c(1:3)], six_model) %>%
+    mutate(main_nb = if_else(main < nearby, 
+                             paste(main, nearby, sep = ""), 
+                             paste(nearby, main, sep = ""))) 
+  
+  consistency_check <- cbind(list_infor[,c(1:3)], six_model) %>%
+    mutate(main_nb = if_else(main < nearby, 
+                             paste(main, nearby, sep = ""), 
+                             paste(nearby, main, sep = "")))  %>%
+    group_by(main_nb) %>%
+    summarise(Consistent = all(GPS_ERA == GPS_ERA[1]) &
+                all(GPS_GPS1 == GPS_GPS1[1]) &
+                all(GPS_ERA1 == GPS_ERA1[1]) &
+                all(ERA_ERA1 == ERA_ERA1[1]) &
+                all(GPS1_ERA1 == GPS1_ERA1[1]) &
+                all(GPS1_ERA == GPS1_ERA[1]),
+              Count = n()
+    ) %>%
+    ungroup()
+  
+  # Function to check consistency for each model
+  model_inconsistencies <- all_model %>%
+    group_by(main_nb) %>%
+    summarise(
+      Inconsistency_GPS_ERA = n_distinct(GPS_ERA),
+      Inconsistency_GPS_GPS1 = n_distinct(GPS_GPS1),
+      Inconsistency_GPS_ERA1 = n_distinct(GPS_ERA1),
+      Inconsistency_ERA_ERA1 = n_distinct(ERA_ERA1),
+      Inconsistency_GPS1_ERA1 = n_distinct(GPS1_ERA1),
+      Inconsistency_GPS1_ERA = n_distinct(GPS1_ERA)
+    )
+  
+  res_plot = data.frame(series = rep(list_name_test, each = 4), 
+                        mod = rep(list_model, 6),
+                        value = six_values, 
+                        n = rep(length_data,24))
+  res_plot$pct = res_plot$value/res_plot$n*100
+  res_plot$series = factor(res_plot$series, 
+                           levels=reoder_list_name)
+  res_plot$mod = factor(res_plot$mod, 
+                        levels=list_model)
+  
+  p1 <- ggplot(res_plot, aes(fill=mod, y=pct, x=series, label = value)) + 
+    geom_bar(position="dodge", stat="identity", width = 0.5)+theme_bw()+ 
+    xlab("") + ylab("Percentage")+
+    labs(tag = "(a)", subtitle = text1) +
+    geom_text(position = position_dodge(width = .5),    # move to center of bars
+              vjust = -0.5,    # nudge above top of bar
+              size = 1)+
+    ylim(c(0,100))+
+    theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
+          axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), 
+          plot.tag = element_text(size = 6) , plot.subtitle = element_text(size = 6),
+          legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
+  
+  ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima_test.jpg" ), plot = p1, width = 14, height = 5, units = "cm", dpi = 1200)
+  
+  
+  
+}
+
+

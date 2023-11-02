@@ -6,6 +6,8 @@
 #' 
 path_data_NGL = "/home/knguyen/data/Data/NGL-attribution/NGL/"
 list_six_diff = c("GPS-ERA", "GPS-GPS'", "GPS-ERA'", "ERA-ERA'", "GPS'-ERA'", "GPS'-ERA")
+reoder_list_name = c("G-E", "G'-E'", "G-G'", "E-E'","G-E'","G'-E")
+list_name_test = c("G-E", "G-G'", "G-E'", "E-E'", "G'-E'","G'-E")
 name_six_diff = c("GPS_ERA", "GPS_GPS1", "GPS_ERA1", "ERA_ERA1", "GPS1_ERA1", "GPS1_ERA")
 source(file = paste0(path_code, "support_fc.R"))
 source(file = paste0(path_code, "support_data_characterization.R"))
@@ -179,3 +181,9 @@ write.table(ARMA_coef, file = paste0(path_results, "coef_arma.txt"),
             sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 write.table(Four_coef, file = paste0(path_results, "Four_coef.txt"), 
             sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+
+
+# extract result of data characterization ---------------------------------
+# NOTE PLOT AND NUMBER SHOULD REPORT ONLY 1 FOR EACH PAIR OF MAIN-NEARBY 
+# --> CAN CHECK THE CONSISTENCY IN NOISE MODEL IN EACH PAIR 
+
