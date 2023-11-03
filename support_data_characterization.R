@@ -294,7 +294,7 @@ plot_for_papar <- function(arma_order, arma_coef, list_infor, name_six_diff){
   text1 = "Distance < 50 km"
   text2 = "Distance > 50 km"
   
-  length_data =nrow(list_infor)
+  length_data = nrow(order_arma)
   six_model = data.frame(matrix(NA, ncol = 6, nrow = length_data))
   for (i in 1:6) {
     six_model[,i] = sapply(c(1:length_data), function(x) {

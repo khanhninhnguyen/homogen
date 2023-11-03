@@ -125,7 +125,7 @@ extract_ngl <- function(fichier, path_file, name.folder) {
 a = read.table(file = paste0("/home/knguyen/Documents/PhD/Results/", "NGL6048.BM_BJ.date_mean.txt"), header = TRUE)
 rpt_data$t_break = as.Date(rpt_data$t_break)
 a <- infor_all %>% 
-  full_join(rpt_data, 
+  right_join(rpt_data, 
             by = join_by(main == name_main, 
                          brp == t_break,
                          nearby == name_nearby))

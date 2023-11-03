@@ -150,7 +150,7 @@ test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1, cluster_ind
     noise_ind = which(main_brps == main_brp)
     diff_noise = diff(c(cluster_ind[-c(1:noise_ind)], 0))
     cluster_end_ind = which(diff_noise<0)[1]
-    cluster_end = main_brps[(main_brp_ind + 1)]
+    cluster_end = main_brps[(cluster_end_ind + main_brp_ind)]
     dist_noise = cluster_end - main_brp
   } else{
     dist_noise = 0
@@ -213,33 +213,40 @@ test3 <- function(main_brp, df_data, main_beg, main_end, nearby_beg, nearby_end,
   df3_bef = df_data[which(df_data$Date > beg_df & df_data$Date < main_brp),]
   df3_aft = df_data[which(df_data$Date >= main_brp & df_data$Date < end_df),]
   
-  if(all(is.na(df3_bef$GPS_GPS1))){
-    nb3_bef = 0
-  }else{
-    nb3_bef = nb_consecutive(list.day = df3_bef$Date, x = df3_bef[["GPS1_ERA"]])
-  }
   
-  if(all(is.na(df3_aft$GPS_GPS1))){
-    nb3_aft = 0
-  }else{
-    nb3_aft = nb_consecutive(list.day = df3_aft$Date, x = df3_aft[["GPS1_ERA"]])
-  }
+  nb1_bef = length(which(!is.na(df1_bef[["GPS_ERA"]])))
+  nb1_aft = length(which(!is.na(df1_aft[["GPS_ERA"]])))
+  nb2_bef = length(which(!is.na(df2_bef[["GPS1_ERA1"]])))
+  nb2_aft = length(which(!is.na(df2_aft[["GPS1_ERA1"]])))
+  nb3_bef = length(which(!is.na(df3_bef[["GPS1_ERA"]])))
+  nb3_aft = length(which(!is.na(df3_aft[["GPS1_ERA"]])))
   
-  if(all(is.na(df2_bef$GPS1_ERA1))){
-    nb2_bef = 0
-  }else{
-    nb2_bef = nb_consecutive(list.day = df2_bef$Date, x = df2_bef[["GPS1_ERA1"]])
-  }
-  
-  if(all(is.na(df2_aft$GPS1_ERA1))){
-    nb2_aft = 0
-  }else{
-    nb2_aft = nb_consecutive(list.day = df2_aft$Date, x = df2_aft[["GPS1_ERA1"]])
-  }
-  
-  nb1_bef = nb_consecutive(list.day = df1_bef$Date, x = df1_bef[["GPS_ERA"]])
-
-  nb1_aft = nb_consecutive(list.day = df1_aft$Date, x = df1_aft[["GPS_ERA"]])
+  # if(all(is.na(df3_bef$GPS_GPS1))){
+  #   nb3_bef = 0
+  # }else{
+  #   nb3_bef = nb_consecutive(list.day = df3_bef$Date, x = df3_bef[["GPS1_ERA"]])
+  # }
+  # 
+  # if(all(is.na(df3_aft$GPS_GPS1))){
+  #   nb3_aft = 0
+  # }else{
+  #   nb3_aft = nb_consecutive(list.day = df3_aft$Date, x = df3_aft[["GPS1_ERA"]])
+  # }
+  # 
+  # if(all(is.na(df2_bef$GPS1_ERA1))){
+  #   nb2_bef = 0
+  # }else{
+  #   nb2_bef = nb_consecutive(list.day = df2_bef$Date, x = df2_bef[["GPS1_ERA1"]])
+  # }
+  # 
+  # if(all(is.na(df2_aft$GPS1_ERA1))){
+  #   nb2_aft = 0
+  # }else{
+  #   nb2_aft = nb_consecutive(list.day = df2_aft$Date, x = df2_aft[["GPS1_ERA1"]])
+  # }
+  # 
+  # nb1_bef = nb_consecutive(list.day = df1_bef$Date, x = df1_bef[["GPS_ERA"]])
+  # nb1_aft = nb_consecutive(list.day = df1_aft$Date, x = df1_aft[["GPS_ERA"]])
 
   period1_aft = as.numeric(max(df1_aft$Date) - min(df1_aft$Date))
   period2_aft = as.numeric(max(df2_aft$Date) - min(df2_aft$Date))
@@ -249,13 +256,13 @@ test3 <- function(main_brp, df_data, main_beg, main_end, nearby_beg, nearby_end,
   period2_bef = as.numeric(max(df2_bef$Date) - min(df2_bef$Date))
   period3_bef = as.numeric(max(df3_bef$Date) - min(df3_bef$Date))
   
-  r1_bef = nb1_bef/(period1_bef-1)
-  r2_bef = ifelse(period2_bef <= 1, 0, nb2_bef/(period2_bef-1))
-  r3_bef = ifelse(period2_bef <= 1, 0, nb3_bef/(period3_bef-1))
+  r1_bef = nb1_bef/(period1_bef)
+  r2_bef = ifelse(period2_bef <= 1, 0, nb2_bef/(period2_bef))
+  r3_bef = ifelse(period2_bef <= 1, 0, nb3_bef/(period3_bef))
   
   r1_aft = nb1_aft/(period1_aft-1)
-  r2_aft = ifelse(period2_aft <= 1, 0, nb2_aft/(period2_aft-1))
-  r3_aft = ifelse(period3_aft <= 1, 0, nb3_aft/(period3_aft-1))
+  r2_aft = ifelse(period2_aft <= 1, 0, nb2_aft/(period2_aft))
+  r3_aft = ifelse(period3_aft <= 1, 0, nb3_aft/(period3_aft))
   
   return(list(
     n_main_bef = nb1_bef, n_nearby_bef = nb2_bef, n_joint_bef = nb3_bef,
@@ -396,4 +403,91 @@ check_selected <- function(list_brp, infor_all, nbcsv_min, distance, rate_consec
               rate = summary(filtered_nb$Count))
   
   return(out)
+}
+
+list_longest_segment <- function(path_data, date_mean, list_brp, path_results){
+  list_all_pairs = unique(substr(list.files(path_data),6,14))
+  list_main = substr(list_all_pairs,1,4)
+  list_nearby = substr(list_all_pairs,6,9)
+  
+  test_pairs <- unique(if_else(list_main<list_nearby, 
+                               paste(list_main, list_nearby, sep = "-"), 
+                               paste(list_nearby, list_main, sep = "-")))
+  
+  list_points = date_mean %>%
+    group_by(name) %>%
+    summarise(
+      FirstBegin = first(begin),
+      AllEnd = list(end)
+    ) %>%
+    ungroup() %>%
+    split(.$name) %>%
+    lapply(function(x) c(FirstBegin = x$FirstBegin, AllEnd = unlist(x$AllEnd)))
+  
+  df_infor <- as.data.frame(replicate(9, rep(NA, length(test_pairs)), 
+                                      simplify = FALSE)) %>%
+    mutate(name = test_pairs) %>%
+    relocate(name, .before = 1) %>%
+    setNames(c("name", paste0(rep(c("length_", "beg_", "end_"), each = 3),
+                              c("main", "nearby", "joint")))) %>%
+    mutate(across(5:10, as.Date , origin = "1970-01-01", format = "%Y-%m-%d")) 
+  
+  for (i in c(1:length(test_pairs))) {
+    station1 = substr(test_pairs[i], 1, 4)
+    station2 = substr(test_pairs[i], 6, 9)
+    
+    list_brp1 = sort(as.Date(list_points[[which(names(list_points) == station1)]],
+                             origin = "1970-01-01",
+                             format = "%Y-%m-%d"))
+    list_brp2 = sort(as.Date(list_points[[which(names(list_points) == station2)]],
+                             origin = "1970-01-01",
+                             format = "%Y-%m-%d"))
+    
+    beg = max(list_brp1[1], list_brp2[1])
+    end = min(list_brp1[length(list_brp1)],list_brp2[length(list_brp2)])
+    list_brp_all = sort(c(list_brp1, list_brp2))
+    list_brp3 = list_brp_all[which(list_brp_all >= beg & list_brp_all <= end)]
+    
+    d1 = diff(list_brp1, lag = 1)
+    d2 = diff(list_brp2, lag = 1)
+    d3 = diff(list_brp3, lag = 1)
+    
+    df_infor[i,"beg_main"] = list_brp1[which.max(d1)]
+    df_infor[i,"end_main"] = list_brp1[which.max(d1)+1]
+    df_infor[i,"beg_nearby"] = list_brp2[which.max(d2)]
+    df_infor[i,"end_nearby"] = list_brp2[which.max(d2)+1]
+    df_infor[i,"beg_joint"] = list_brp3[which.max(d3)]
+    df_infor[i,"end_joint"] = list_brp3[which.max(d3)+1]
+    
+    df_infor[i,paste0(rep("length_", 3), c("main", "nearby", "joint"))] =
+      c(max(d1), max(d2), max(d3))
+    
+  }
+  
+  # priotize the series has main station in list of main 
+  two_stations = c(station1, station2) 
+  ind_main = which(two_stations %in% list_main)
+  if(2 %in% ind_main){
+    add_row = df_infor[i,] %>% 
+      mutate(name = paste(station2, station1, sep = "-"))
+    add_row[,c("length_main", "length_nearby")] <- add_row[,c("length_nearby", "length_main")] 
+    add_row[,c("beg_main", "beg_nearby")] <- add_row[,c("beg_nearby", "beg_main")] 
+    add_row[,c("end_main", "end_nearby")] <- add_row[,c("end_nearby", "end_main")] 
+    if(length(ind_main) == 2){
+      df_infor = df_infor %>% bind_rows(add_row)
+    }else if(ind_main == 2){
+      df_infor[i,] <- add_row
+    }
+  }
+  
+  df_infor <- df_infor %>%
+    mutate(main = substr(name, 1, 4),
+           nearby = substr(name, 6, 9)) %>%
+    relocate(c(tail(names(df_infor), 2)), .before = 1) %>%
+    select(-name)
+  
+  
+  write.table(df_infor, file = paste0(path_results, "List_longest_segment.txt"), 
+              sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+  return(df_infor)
 }
