@@ -16,7 +16,7 @@ construct_design <- function(data.df, name.series, break.ind, one.year = 365){
   }
   Data.mod <- Data.mod %>% dplyr::select(-complete.time)
   n0 = nrow(data.df)
-  Data.mod$right = c(rep(0, break.ind), rep(1, (n0-break.ind)))
+  # Data.mod$right = c(rep(0, break.ind), rep(1, (n0-break.ind)))
   Data.mod$left = rep(1, n0)
   
   return(Data.mod)

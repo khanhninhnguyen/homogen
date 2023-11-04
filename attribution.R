@@ -104,9 +104,10 @@ infor_selected <- infor_selected %>%
 # CHECK THIS, NOT TRUE
 a = list_longest_segment(path_data = path_data_NGL, date_mean = date_mean,
                          path_results = path_results)
-characterize <- function(list_infor, path_data, path_results){
+
+characterize <- function(list_infor = a, path_data, path_results){
   infor_selected = list_infor
-  Four_coef = data.frame(matrix(NA, ncol = 60, nrow = nrow(infor_selected)))
+  Four_coef = data.frame(matrix(NA, ncol = 50, nrow = nrow(infor_selected)))
   ARMA_order <- data.frame(matrix(NA, ncol = 18, nrow = nrow(infor_selected)))
   ARMA_coef <- data.frame(matrix(NA, ncol = 24, nrow = nrow(infor_selected)))
   Res_iwls <- list()
@@ -120,22 +121,22 @@ characterize <- function(list_infor, path_data, path_results){
                             name_six_diff = name_six_diff)
     df_data$Date <- as.Date(df_data$Date, format = "%Y-%m-%d")
     
-    beg <- min(infor_selected$main_beg_new[i], infor_selected$nearby_beg_new[i])
-    end <- max(infor_selected$main_end_new[i], infor_selected$nearby_end_new[i])
+    beg <- min(infor_selected$beg_main[i], infor_selected$beg_nearby[i])
+    end <- max(infor_selected$end_main[i], infor_selected$end_nearby[i])
     
-    beg_m <- max(infor_selected$main_beg_new[i], infor_selected$nearby_beg_new[i])
-    end_m <- min(infor_selected$main_end_new[i], infor_selected$nearby_end_new[i])
+    beg_m <- max(infor_selected$beg_main[i], infor_selected$beg_nearby[i])
+    end_m <- min(infor_selected$end_main[i], infor_selected$end_nearby[i])
     # replace outside values by NA
     df_data <- df_data %>%
       filter(Date >= beg & Date <= end) %>%
       mutate(
-        GPS_ERA = ifelse(Date < infor_selected$main_beg_new[i] |
-                           Date > infor_selected$main_end_new[i], NA, GPS_ERA),
+        GPS_ERA = ifelse(Date < infor_selected$beg_main[i] |
+                           Date > infor_selected$end_main[i], NA, GPS_ERA),
         GPS_GPS1 = ifelse(Date < beg_m | Date > end_m, NA, GPS_GPS1),
         GPS_ERA1 = ifelse(Date < beg_m | Date > end_m, NA, GPS_ERA1),
         ERA_ERA1 = ifelse(Date < beg_m | Date > end_m, NA, ERA_ERA1),
-        GPS1_ERA1 = ifelse(Date < infor_selected$nearby_beg_new[i] |
-                             Date > infor_selected$nearby_end_new[i], NA, GPS1_ERA1),
+        GPS1_ERA1 = ifelse(Date < infor_selected$beg_nearby[i] |
+                             Date > infor_selected$end_nearby[i], NA, GPS1_ERA1),
         GPS1_ERA = ifelse(Date < beg_m | Date > end_m, NA, GPS1_ERA),
       )
     
@@ -165,15 +166,15 @@ characterize <- function(list_infor, path_data, path_results){
       
       ARMA_order[i,c((3*j-2):(3*j))] = arima_fit$pq
       ARMA_coef[i,c((4*j-3):(4*j))] = round(arima_fit$coef, digits = 4)
-      Four_coef[i,c((10*j-9):(10*j))] = round(fit_igls$coefficients, digits = 4)
+      Four_coef[i,c((9*j-8):(9*j))] = round(fit_igls$coefficients, digits = 4)
     }
     # Res_iwls[[paste(
     #   infor_all[i, 1], 
     #   format(infor_all[i, 2], "%Y-%m-%d"), 
     #   infor_all[i, 3], sep = ".")]] <- Res_IWLS
-    name_case = paste(infor_all[i, 1],
-                      format(infor_all[i, 2], "%Y-%m-%d"), 
-                      infor_all[i, 3], sep = ".")
+    name_case = paste(infor_selected[i, 1],
+                      # format(infor_all[i, 2], "%Y-%m-%d"), 
+                      infor_selected[i, 2], sep = ".")
     save(Res_IWLS, 
          file = paste0(path_results, "Res_IWLS_", name_case, ".RData"))
     

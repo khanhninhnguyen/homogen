@@ -462,30 +462,28 @@ list_longest_segment <- function(path_data, date_mean, list_brp, path_results){
     df_infor[i,paste0(rep("length_", 3), c("main", "nearby", "joint"))] =
       c(max(d1), max(d2), max(d3))
     
-  }
-  
-  # priotize the series has main station in list of main 
-  two_stations = c(station1, station2) 
-  ind_main = which(two_stations %in% list_main)
-  if(2 %in% ind_main){
-    add_row = df_infor[i,] %>% 
-      mutate(name = paste(station2, station1, sep = "-"))
-    add_row[,c("length_main", "length_nearby")] <- add_row[,c("length_nearby", "length_main")] 
-    add_row[,c("beg_main", "beg_nearby")] <- add_row[,c("beg_nearby", "beg_main")] 
-    add_row[,c("end_main", "end_nearby")] <- add_row[,c("end_nearby", "end_main")] 
-    if(length(ind_main) == 2){
-      df_infor = df_infor %>% bind_rows(add_row)
-    }else if(ind_main == 2){
-      df_infor[i,] <- add_row
+    # priotize the series has main station in list of main 
+    two_stations = c(station1, station2) 
+    ind_main = which(two_stations %in% list_main)
+    if(2 %in% ind_main){
+      add_row = df_infor[i,] %>% 
+        mutate(name = paste(station2, station1, sep = "-"))
+      add_row[,c("length_main", "length_nearby")] <- add_row[,c("length_nearby", "length_main")] 
+      add_row[,c("beg_main", "beg_nearby")] <- add_row[,c("beg_nearby", "beg_main")] 
+      add_row[,c("end_main", "end_nearby")] <- add_row[,c("end_nearby", "end_main")] 
+      if(length(ind_main) == 2){
+        df_infor = df_infor %>% bind_rows(add_row)
+      }else if(ind_main == 2){
+        df_infor[i,] <- add_row
+      }
     }
   }
+  
   
   df_infor <- df_infor %>%
     mutate(main = substr(name, 1, 4),
            nearby = substr(name, 6, 9)) %>%
-    relocate(c(tail(names(df_infor), 2)), .before = 1) %>%
-    select(-name)
-  
+    select(main, nearby, everything(), -name)
   
   write.table(df_infor, file = paste0(path_results, "List_longest_segment.txt"), 
               sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
