@@ -6,6 +6,7 @@ library(dplyr)
 library(purrr)
 library(ggplot2)
 library(tidyverse)
+library(nlme)
 
 ### uncomment to run segmentation 
 

@@ -102,10 +102,10 @@ infor_selected <- infor_selected %>%
   ungroup()
 
 # CHECK THIS, NOT TRUE
-a = list_longest_segment(path_data = path_data_NGL, date_mean = date_mean,
+df_infor = list_longest_segment(path_data = path_data_NGL, date_mean = date_mean,
                          path_results = path_results)
 
-characterize <- function(list_infor = a, path_data, path_results){
+characterize <- function(list_infor, path_data, path_results){
   infor_selected = list_infor
   Four_coef = data.frame(matrix(NA, ncol = 50, nrow = nrow(infor_selected)))
   ARMA_order <- data.frame(matrix(NA, ncol = 18, nrow = nrow(infor_selected)))
@@ -121,29 +121,44 @@ characterize <- function(list_infor = a, path_data, path_results){
                             name_six_diff = name_six_diff)
     df_data$Date <- as.Date(df_data$Date, format = "%Y-%m-%d")
     
-    beg <- min(infor_selected$beg_main[i], infor_selected$beg_nearby[i])
-    end <- max(infor_selected$end_main[i], infor_selected$end_nearby[i])
+    # beg <- min(infor_selected$beg_main[i], infor_selected$beg_nearby[i])
+    # end <- max(infor_selected$end_main[i], infor_selected$end_nearby[i])
+    # 
+    # beg_m <- max(infor_selected$beg_main[i], infor_selected$beg_nearby[i])
+    # end_m <- min(infor_selected$end_main[i], infor_selected$end_nearby[i])
     
-    beg_m <- max(infor_selected$beg_main[i], infor_selected$beg_nearby[i])
-    end_m <- min(infor_selected$end_main[i], infor_selected$end_nearby[i])
+    beg_main = infor_selected$beg_main[i]
+    beg_nearby = infor_selected$beg_nearby[i]
+    beg_joint = infor_selected$beg_joint[i]
+    end_main = infor_selected$end_main[i]
+    end_nearby = infor_selected$end_nearby[i]
+    end_joint = infor_selected$end_joint[i]
+    
     # replace outside values by NA
     df_data <- df_data %>%
-      filter(Date >= beg & Date <= end) %>%
       mutate(
-        GPS_ERA = ifelse(Date < infor_selected$beg_main[i] |
-                           Date > infor_selected$end_main[i], NA, GPS_ERA),
-        GPS_GPS1 = ifelse(Date < beg_m | Date > end_m, NA, GPS_GPS1),
-        GPS_ERA1 = ifelse(Date < beg_m | Date > end_m, NA, GPS_ERA1),
-        ERA_ERA1 = ifelse(Date < beg_m | Date > end_m, NA, ERA_ERA1),
-        GPS1_ERA1 = ifelse(Date < infor_selected$beg_nearby[i] |
-                             Date > infor_selected$end_nearby[i], NA, GPS1_ERA1),
-        GPS1_ERA = ifelse(Date < beg_m | Date > end_m, NA, GPS1_ERA),
-      )
+        GPS_ERA = ifelse(Date < beg_main |
+                           Date > end_main, NA, GPS_ERA),
+        GPS_GPS1 = ifelse(Date < beg_joint | Date > end_joint, NA, GPS_GPS1),
+        GPS_ERA1 = ifelse(Date < beg_joint | Date > end_joint, NA, GPS_ERA1),
+        ERA_ERA1 = ifelse(Date < beg_joint | Date > end_joint, NA, ERA_ERA1),
+        GPS1_ERA1 = ifelse(Date < beg_nearby |
+                             Date > end_nearby, NA, GPS1_ERA1),
+        GPS1_ERA = ifelse(Date < beg_joint | Date > end_joint, NA, GPS1_ERA),
+      ) %>%
+      remove_na_2sides_df(name_date = "Date")
     
     Res_IWLS = df_data %>% select(Date)
     brp_ind = which(df_data$Date == infor_selected$brp[i])
     
-    for (j in c(1:6)) {
+    list_ind = c(1:6)
+    if(i >1){
+      if(main_st == infor_selected$main[i-1]){
+        list_ind = c(2:6)
+      }
+    }
+    
+    for (j in list_ind) {
       name.series0 = name_six_diff[j]
       m = construct_design(df_data, name.series = name.series0, break.ind = brp_ind)
       nna_ind = which(!is.na(m$signal))
@@ -206,7 +221,8 @@ characterize <- function(list_infor = a, path_data, path_results){
   write.table(coef_arma_m, file = paste0(path_results, "Coeff_ARMA.txt"), 
               sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 }
-
+characterize(list_infor = df_infor, path_data = path_data_NGL,
+             path_results = path_results)
 # extract result of data characterization ---------------------------------
 # NOTE PLOT AND NUMBER SHOULD REPORT ONLY 1 FOR EACH PAIR OF MAIN-NEARBY 
 # --> CAN CHECK THE CONSISTENCY IN NOISE MODEL IN EACH PAIR 

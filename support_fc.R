@@ -67,13 +67,14 @@ read_data_new <- function(path_data, main_st, nearby_st, name_six_diff){
   name_pre = paste0("diwv_", main_st, "-", nearby_st, "_Zc")
   
   list_six_data = lapply(c(1:6), function(i){
-    read.table(file = paste0(path_data, name_pre, i, ".txt"), 
+    a = read.table(file = paste0(path_data, name_pre, i, ".txt"), 
                skip = 1, colClasses = c("character", "numeric"), 
-               col.names = c("Date", name_six_diff[i]))
+               col.names = c("Date", name_six_diff[i])) %>%
+      mutate(Date = as.Date(convert_date(Date), format = "%Y-%m-%d"))
   })
   
-  df_six_data = reduce(list_six_data, full_join, by = "Date")
-  df_six_data$Date = convert_date(df_six_data$Date)
+  df_six_data = reduce(list_six_data, full_join, by = "Date") %>%
+    arrange(Date)
   
   return(df_six_data)
 }
@@ -430,7 +431,7 @@ list_longest_segment <- function(path_data, date_mean, list_brp, path_results){
     relocate(name, .before = 1) %>%
     setNames(c("name", paste0(rep(c("length_", "beg_", "end_"), each = 3),
                               c("main", "nearby", "joint")))) %>%
-    mutate(across(5:10, as.Date , origin = "1970-01-01", format = "%Y-%m-%d")) 
+    mutate(across(5:10, \(x) as.Date(x, origin = "1970-01-01", format = "%Y-%m-%d"))) 
   
   for (i in c(1:length(test_pairs))) {
     station1 = substr(test_pairs[i], 1, 4)
@@ -483,6 +484,7 @@ list_longest_segment <- function(path_data, date_mean, list_brp, path_results){
   df_infor <- df_infor %>%
     mutate(main = substr(name, 1, 4),
            nearby = substr(name, 6, 9)) %>%
+    filter(name %in% list_all_pairs) %>%
     select(main, nearby, everything(), -name)
   
   write.table(df_infor, file = paste0(path_results, "List_longest_segment.txt"), 

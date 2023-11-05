@@ -6,6 +6,19 @@ remove_na_2sides <- function(df, name.series){
   return(df)
 }
 
+remove_na_2sides_df <- function(df, name_date){
+  df0 <- df
+  df[name_date] <- NULL
+  all_na_rows <- rowSums(is.na(df)) == ncol(df)
+    
+  first_valid_index <- which(!all_na_rows)[1]
+  last_valid_index <- tail(which(!all_na_rows), 1)
+    
+  cleaned_df <- df0[c(first_valid_index:last_valid_index), ]
+    
+    return(cleaned_df)
+}
+
 construct_design <- function(data.df, name.series, break.ind, one.year = 365){
   Data.mod <- data.df %>% dplyr::select(name.series,Date) %>%
     rename(signal=name.series) %>% 
