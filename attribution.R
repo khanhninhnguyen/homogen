@@ -40,9 +40,9 @@ list_brp = extract_list_brp(date_mean)
 list_brp <- list_brp %>%
   group_by(name) %>%
   mutate(cluster_index = get_clusters(brp, 80)) 
-# infor_all = extract_info_nearby(path_data = path_data_NGL,
-#                                 list_brp = list_brp,
-#                                 path_results = path_results)
+infor_all = extract_info_nearby(path_data = path_data_NGL,
+                                list_brp = list_brp,
+                                path_results = path_results)
 column_classes <- c("character", "Date", "character", rep("numeric",3),
                     rep("Date", 4), rep("numeric", 12))
 infor_all = read.table(file = paste0(path_results, "clean_version/pre_info_test.txt"), 
@@ -229,6 +229,8 @@ characterize(list_infor = df_infor, path_data = path_data_NGL,
 
   
   
+
+
 
 
 

@@ -161,11 +161,16 @@ test2 <- function(main_brp, main_brps, df_data, nearby_brps, test_1, cluster_ind
   main_brp_min = main_brp - abs(dist_noise)
   main_brp_max = main_brp + abs(dist_noise)
   main_beg_new <- max(main_brps_m[main_brps_m < main_brp_min])
+  if(main_beg_new != main_beg){
+    main_beg_new <- main_beg_new + 1
+  }
   main_end_new <- min(main_brps_m[main_brps_m > main_brp_max])
-  
+
   list_nearby_brpb <- nearby_brps_m[nearby_brps_m < main_brp_min1]
   if(length(list_nearby_brpb) > 0){
     nearby_beg_new <- max(list_nearby_brpb)
+    if(nearby_beg_new != nearby_beg)
+    nearby_beg_new <- nearby_beg_new + 1
   }else{
     nearby_beg_new <- 0
   }
@@ -205,14 +210,14 @@ test3 <- function(main_brp, df_data, main_beg, main_end, nearby_beg, nearby_end,
     df_data[remove_ind, !(names(df_data) %in% c("Date","GPS_ERA"))] <- NA
   }
   
-  df1_bef = df_data[which(df_data$Date > main_beg & df_data$Date < main_brp),]
-  df1_aft = df_data[which(df_data$Date >= main_brp & df_data$Date < main_end),]
+  df1_bef = df_data[which(df_data$Date >= main_beg & df_data$Date <= main_brp),]
+  df1_aft = df_data[which(df_data$Date > main_brp & df_data$Date <= main_end),]
   
-  df2_bef = df_data[which(df_data$Date > nearby_beg & df_data$Date < main_brp),]
-  df2_aft = df_data[which(df_data$Date >= main_brp & df_data$Date < nearby_end),]
+  df2_bef = df_data[which(df_data$Date >= nearby_beg & df_data$Date <= main_brp),]
+  df2_aft = df_data[which(df_data$Date > main_brp & df_data$Date <= nearby_end),]
   
-  df3_bef = df_data[which(df_data$Date > beg_df & df_data$Date < main_brp),]
-  df3_aft = df_data[which(df_data$Date >= main_brp & df_data$Date < end_df),]
+  df3_bef = df_data[which(df_data$Date >= beg_df & df_data$Date <= main_brp),]
+  df3_aft = df_data[which(df_data$Date > main_brp & df_data$Date <= end_df),]
   
   
   nb1_bef = length(which(!is.na(df1_bef[["GPS_ERA"]])))
