@@ -19,7 +19,16 @@ infor_sel <- infor_all %>%
          n_joint_aft > nbcsv_min)
 
 test <- infor_sel %>% 
-  left_join(rpt_data, 
+  full_join(rpt_data, 
             by = join_by(main == name_main, 
                          brp == t_break,
                          nearby == name_nearby))
+a = test[which(is.na(test$main_end_new)),]
+b = test[which(is.na(test$i_nearby)),]
+d = unique(a[,c(1:2)])
+test_s <- infor_sel %>% 
+  inner_join(rpt_data, 
+            by = join_by(main == name_main, 
+                         brp == t_break,
+                         nearby == name_nearby))
+f = test_s[which(test_s$n_main_bef != test_s$np_av),]
