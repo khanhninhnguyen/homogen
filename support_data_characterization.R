@@ -298,7 +298,125 @@ fit.arima <- function(signal.test, significant.level = 0.05){
   return(list(pq = pq, coef = refit1$pandcoef$coef, p = refit1$pandcoef$p.value))
 }
 
-plot_for_papar <- function(arma_order, arma_coef, list_infor, name_six_diff){
+characterize <- function(list_infor, path_data, path_results){
+  infor_selected = list_infor
+  Four_coef = data.frame(matrix(NA, ncol = 50, nrow = nrow(infor_selected)))
+  ARMA_order <- data.frame(matrix(NA, ncol = 18, nrow = nrow(infor_selected)))
+  ARMA_coef <- data.frame(matrix(NA, ncol = 24, nrow = nrow(infor_selected)))
+  Res_iwls <- list()
+  
+  for (i in c(1:nrow(infor_selected))) {
+    main_st = infor_selected$main[i]
+    nearby_st = infor_selected$nearby[i]
+    df_data = read_data_new(path_data = path_data_NGL,
+                            main_st = main_st, 
+                            nearby_st = nearby_st,
+                            name_six_diff = name_six_diff)
+    df_data$Date <- as.Date(df_data$Date, format = "%Y-%m-%d")
+    
+    # beg <- min(infor_selected$beg_main[i], infor_selected$beg_nearby[i])
+    # end <- max(infor_selected$end_main[i], infor_selected$end_nearby[i])
+    # 
+    # beg_m <- max(infor_selected$beg_main[i], infor_selected$beg_nearby[i])
+    # end_m <- min(infor_selected$end_main[i], infor_selected$end_nearby[i])
+    
+    beg_main = infor_selected$beg_main[i]
+    beg_nearby = infor_selected$beg_nearby[i]
+    beg_joint = infor_selected$beg_joint[i]
+    end_main = infor_selected$end_main[i]
+    end_nearby = infor_selected$end_nearby[i]
+    end_joint = infor_selected$end_joint[i]
+    
+    # replace outside values by NA
+    df_data <- df_data %>%
+      mutate(
+        GPS_ERA = ifelse(Date < beg_main |
+                           Date > end_main, NA, GPS_ERA),
+        GPS_GPS1 = ifelse(Date < beg_joint | Date > end_joint, NA, GPS_GPS1),
+        GPS_ERA1 = ifelse(Date < beg_joint | Date > end_joint, NA, GPS_ERA1),
+        ERA_ERA1 = ifelse(Date < beg_joint | Date > end_joint, NA, ERA_ERA1),
+        GPS1_ERA1 = ifelse(Date < beg_nearby |
+                             Date > end_nearby, NA, GPS1_ERA1),
+        GPS1_ERA = ifelse(Date < beg_joint | Date > end_joint, NA, GPS1_ERA),
+      ) %>%
+      remove_na_2sides_df(name_date = "Date")
+    
+    Res_IWLS = df_data %>% select(Date)
+    brp_ind = which(df_data$Date == infor_selected$brp[i])
+    
+    list_ind = c(1:6)
+    if(i >1){
+      if(main_st == infor_selected$main[i-1]){
+        list_ind = c(2:6)
+      }
+    }
+    
+    for (j in list_ind) {
+      name.series0 = name_six_diff[j]
+      m = construct_design(df_data, name.series = name.series0, break.ind = brp_ind)
+      nna_ind = which(!is.na(m$signal))
+      
+      norm_res <- rep(NA, nrow(m))
+      fit_igls_var <- rep(NA, nrow(m))
+      fit_igls_res <- rep(NA, nrow(m))
+      
+      tol0 = 0.01
+      if(i == 49 & j ==5){ tol0 = 0.0001 }
+      fit_igls = IGLS(design.m = m[nna_ind,], tol =  tol0, day.list = df_data$Date[nna_ind])
+      norm_res[nna_ind] = unlist(fit_igls$residual)/sqrt(unlist(fit_igls$var))
+      arima_fit = fit.arima(norm_res)
+      
+      fit_igls_var[nna_ind] <- unlist(fit_igls$var)
+      fit_igls_res[nna_ind] <- unlist(fit_igls$residual)
+      
+      Res_IWLS[, paste0(name.series0, '_var')] <- fit_igls_var
+      Res_IWLS[, paste0(name.series0, '_res')] <- fit_igls_res
+      
+      ARMA_order[i,c((3*j-2):(3*j))] = arima_fit$pq
+      ARMA_coef[i,c((4*j-3):(4*j))] = round(arima_fit$coef, digits = 4)
+      Four_coef[i,c((9*j-8):(9*j))] = round(fit_igls$coefficients, digits = 4)
+    }
+    # Res_iwls[[paste(
+    #   infor_all[i, 1], 
+    #   format(infor_all[i, 2], "%Y-%m-%d"), 
+    #   infor_all[i, 3], sep = ".")]] <- Res_IWLS
+    name_case = paste(infor_selected[i, 1],
+                      # format(infor_all[i, 2], "%Y-%m-%d"), 
+                      infor_selected[i, 2], sep = ".")
+    save(Res_IWLS, 
+         file = paste0(path_results, "Res_IWLS_", name_case, ".RData"))
+    
+    print(i)
+  }
+  
+  write.table(ARMA_order, file = paste0(path_results, "order_arma.txt"), 
+              sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+  write.table(ARMA_coef, file = paste0(path_results, "coef_arma.txt"), 
+              sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+  write.table(Four_coef, file = paste0(path_results, "Four_coef.txt"), 
+              sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+  
+  #' Modify a bit the final result
+  order_arma = read.table(file = paste0(path_results, "order_arma.txt"),
+                          header = TRUE)
+  coef_arma = read.table(file = paste0(path_results, "coef_arma.txt"),
+                         header = TRUE)
+  
+  order_arma_m = order_arma[,-seq(2,18,3)]
+  colnames(order_arma_m) = c(rbind(outer(c("AR-", "MA-"), 
+                                         name_six_diff, paste0)))
+  coef_arma_m = coef_arma[,-seq(2,24,2)]
+  colnames(coef_arma_m) = c(rbind(outer(c("Phi-", "Theta-"), 
+                                        name_six_diff, paste0)))
+  
+  write.table(order_arma_m, file = paste0(path_results, "Order_ARMA.txt"), 
+              sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+  write.table(coef_arma_m, file = paste0(path_results, "Coeff_ARMA.txt"), 
+              sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+}
+
+
+plot_for_paper <- function(arma_order, arma_coef, list_infor, name_six_diff){
   order_arma = read.table(file = paste0(path_results, "order_arma.txt"), header = TRUE)
   coef_arma = read.table(file = paste0(path_results, "coef_arma.txt"), header = TRUE)
   

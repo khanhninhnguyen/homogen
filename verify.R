@@ -23,12 +23,25 @@ test <- infor_sel %>%
             by = join_by(main == name_main, 
                          brp == t_break,
                          nearby == name_nearby))
-a = test[which(is.na(test$main_end_new)),]
-b = test[which(is.na(test$i_nearby)),]
-d = unique(a[,c(1:2)])
 test_s <- infor_sel %>% 
   inner_join(rpt_data, 
-            by = join_by(main == name_main, 
-                         brp == t_break,
-                         nearby == name_nearby))
+             by = join_by(main == name_main, 
+                          brp == t_break,
+                          nearby == name_nearby))
+a = test[which(is.na(test$main_end_new)),]
+b = test[which(is.na(test$i_nearby)),]
+d = unique(a[,c(1:3)]) %>% 
+  left_join(list_brp,
+            by = join_by(main == name,
+                         brp == brp)) %>%
+  left_join(infor_all,
+            by = join_by(main == main,
+                         brp == brp,
+                         nearby == nearby))
+e = unique(d[is.na(d$main_beg_new),][,c(1:2)]) %>% 
+  left_join(list_brp,
+            by = join_by(main == name))
+g = d[!is.na(d$main_beg_new),]
 f = test_s[which(test_s$n_main_bef != test_s$np_av),]
+
+
