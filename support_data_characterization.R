@@ -67,17 +67,23 @@ IGLS <- function(design.m, tol, day.list){
 }
 
 # heteroskedascity
-range.var <- function(x, day.list, s){
-  df = data.frame(date = day.list, x = x)
-  df$y = format(df$date, "%Y")
-  df[which(is.na(s)==TRUE),] = NA
-  if(all(x==1)){
-    NA
+range_cal <- function(variable, day.list){
+  x = variable
+  out <- c()
+  if(all(is.na(x))){
+    out <- NA
   }else{
-    anu.min = aggregate(x~y, df, function(z) min(z, na.rm=TRUE))[,2]
-    anu.max = aggregate(x~y, df, function(z) max(z, na.rm=TRUE))[,2]
-    ifelse(length(anu.max)!=1,  mean( (anu.max-anu.min), na.rm = TRUE), NA)
+    df = data.frame(date = day.list, x = x)
+    df$y = format(df$date, "%Y")
+    if(all(x==1)){
+      out <- NA
+    }else{
+      anu.min = aggregate(x~y, df, function(z) min(z, na.rm=TRUE))[,2]
+      anu.max = aggregate(x~y, df, function(z) max(z, na.rm=TRUE))[,2]
+      out <- ifelse(length(anu.max)!=1,  mean( (anu.max-anu.min), na.rm = TRUE), NA)
+    }
   }
+  return(out)
 }
 
 diff.range.var <- function(x, day.list,s){
@@ -415,7 +421,6 @@ characterize <- function(list_infor, path_data, path_results){
               sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 }
 
-
 plot_for_paper <- function(arma_order, arma_coef, list_infor, name_six_diff){
   order_arma = read.table(file = paste0(path_results, "order_arma.txt"), header = TRUE)
   coef_arma = read.table(file = paste0(path_results, "coef_arma.txt"), header = TRUE)
@@ -501,4 +506,15 @@ plot_for_paper <- function(arma_order, arma_coef, list_infor, name_six_diff){
   
 }
 
+read_var <- function(path, name_main, name_nearby, name_six_diff){
+  name_file = paste0("Res_IWLS_", name_main,".", name_nearby, ".RData")
+  data_ind = get(load(paste0(path, name_file))) 
+  if(ncol(data_ind)<12){
+    data_ind[,"GPS_ERA_var"] = NA
+  }
+  out = data_ind[,c("Date", paste0(name_six_diff, "_var"))]
+  colnames(out)[-1] <- name_six_diff
+  rownames(out) = NULL
+  return(out)
+}
 
