@@ -3,18 +3,19 @@
 
 library(nlme)
 # Function are used 
-# construct design matrix 
-construct_design <- function(data.df, name.series, break.ind, one.year){
-  Data.mod <- data.df %>% dplyr::select(name.series,date) %>%
-    rename(signal=name.series) %>% 
-    mutate(complete.time=1:nrow(data.df)) %>% 
-    dplyr::select(-date)
+# construct design matrix -- need to be full date
+construct_design <- function(data_df, name_series, break_ind, one_year){
+  data_df <- tidyr::complete(data_df, Date = seq(min(data_df$Date), max(data_df$Date), by = "day"))
+  Data.mod <- data_df %>% dplyr::select(name_series,Date) %>%
+    rename(signal=name_series) %>% 
+    mutate(complete.time=1:nrow(data_df)) %>% 
+    dplyr::select(-Date)
   for (i in 1:4){
-    eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
+    eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one_year),sin",i,"=sin(i*complete.time*(2*pi)/one_year))")))
   }
   Data.mod <- Data.mod %>% dplyr::select(-complete.time)
-  n0 = nrow(data.df)
-  Data.mod$right = c(rep(0, break.ind), rep(1, (n0-break.ind)))
+  n0 = nrow(data_df)
+  Data.mod$right = c(rep(0, break_ind), rep(1, (n0-break_ind)))
   Data.mod$left = rep(1, n0)
   
   return(Data.mod)
@@ -154,4 +155,8 @@ FGLS1 <- function(design.m, tol, day.list, noise.model, length.wind0){
   return(list( coefficients = fit.gls$Coefficients, var = w0, residual = resi0, fit = fit.val, t.table=t.table, coef.arma = coef.arma,  
                i=i, j = j, change1= change1, all.out = fit.gls, t = (end_time - start_time), design.matrix = design.m))
 }
-
+remove_na_2sides <- function(df, name.series){
+  a = which(is.na(df[name.series])== FALSE)
+  df = df[c(min(a):(max(a))), ]
+  return(df)
+}

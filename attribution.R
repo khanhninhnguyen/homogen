@@ -10,8 +10,8 @@ reoder_list_name = c("G-E", "G'-E'", "G-G'", "E-E'","G-E'","G'-E")
 list_name_test = c("G-E", "G-G'", "G-E'", "E-E'", "G'-E'","G'-E")
 name_six_diff = c("GPS_ERA", "GPS_GPS1", "GPS_ERA1", "ERA_ERA1", "GPS1_ERA1", "GPS1_ERA")
 source(file = paste0(path_code, "support_fc.R"))
-source(file = paste0(path_code, "support_data_characterization.R"))
-
+# source(file = paste0(path_code, "support_data_characterization.R"))
+source(file = paste0(path_code, "support_FGLS.R"))
 # order: GPS-ERA, GPS-GPS', GPS-ERA', ERA-ERA', GPS'-ERA', GPS'-ERA
   
 
@@ -303,5 +303,36 @@ column_classes <- c("character", "Date", "character", rep("numeric",3),
 infor_all = read.table(file = paste0(path_results, "final_list_Europe.txt"), 
                        header = TRUE, colClasses = column_classes)
 
-
+for (i in c(1:10)) {
+  main_st = infor_all$main[i]
+  brp = infor_all$brp[i]
+  nearby_st = infor_all$nearby[i]
+  df_data = read_data_new(path_data = path_data_NGL,
+                          main_st = main_st, 
+                          nearby_st = nearby_st,
+                          name_six_diff = name_six_diff)
+  beg = infor_all$main_beg_new[i]
+  end = infor_all$main_end_new[i]
+  
+  for (j in c(1:6)) {
+    name_series = name_six_diff[j]
+    df_test = df_data[,c("Date", name_series)] %>% 
+      filter(Date >= beg & Date <= end)
+   
+    ind_brp = which(df_test[["Date"]] == brp)
+    Data_mod = construct_design(data_df = df_test, 
+                                name_series = name_series,
+                                break_ind = ind_brp, 
+                                one_year = 365)
+    fit.fgls = FGLS1(design.m = Data_mod,
+                     tol= 0.01, 
+                     day.list = df_test$Date, 
+                     noise.model = noise_model,
+                     length.wind0 = 60)
+    
+    
+  }
+  
+  
+}
 

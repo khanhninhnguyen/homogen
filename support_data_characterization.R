@@ -1,11 +1,5 @@
 one.year=365
 
-remove_na_2sides <- function(df, name.series){
-  a = which(is.na(df[name.series])== FALSE)
-  df = df[c(min(a):(max(a))), ]
-  return(df)
-}
-
 remove_na_2sides_df <- function(df, name_date){
   df0 <- df
   df[name_date] <- NULL
