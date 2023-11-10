@@ -47,12 +47,14 @@ column_classes <- c("character", "Date", "character", rep("numeric",3),
                     rep("Date", 4), rep("numeric", 12))
 infor_all = read.table(file = paste0(path_results, "pre_info_test.txt"), 
                        header = TRUE, colClasses = column_classes)
-# add distance infor, note that the number of points here is computed ----
-# by distance between 2 dates, not remove the gaps,
-# brps from Olivier is the end of segment, mine is the begining of segment 
+
 rpt_data <- read.table(file = paste0(path_data, "support/liste_main20yr_1nearby_200km_500m_np250_nd250.rpt"),
                        header = TRUE, check.names = FALSE) 
 distance_list = unique(rpt_data[,c(1,3,13,14)])
+
+# add distance infor, note that the number of points here is computed ----
+# by distance between 2 dates, not remove the gaps,
+# brps from Olivier is the end of segment, mine is the begining of segment 
 
 infor_all <- infor_all %>% 
   left_join(distance_list, 
@@ -180,6 +182,126 @@ apply(mean_var_la, 2 , sd, na.rm = TRUE)
 
 
 
+
+# select the list of cases to do the test ---------------------------------
+# by limiting number of nearby vs distance, noise 
+SD_info = get(load(file = paste0(path_results, "mean_range_SD.RData")))
+SD_info$mean_sd$main = list_selected_segments$main
+SD_info$mean_sd$nearby = list_selected_segments$nearby
+
+nbcsv_min = 250
+infor_selected <- infor_all %>%
+  filter(noise < 2,
+         n_main_bef > nbcsv_min,
+         n_nearby_bef > nbcsv_min,
+         n_joint_bef > nbcsv_min,
+         n_main_aft > nbcsv_min,
+         n_nearby_aft > nbcsv_min,
+         n_joint_aft > nbcsv_min)
+
+number_nearby <- infor_selected %>%
+  group_by(main, brp) %>%
+  summarise(count = n())
+# investigate ----
+
+infor_selected <- infor_selected %>%
+  left_join(distance_list, 
+            by = join_by(main == name_main, 
+                         nearby == name_nearby)) %>%
+  left_join(SD_info$mean_sd,
+            by = join_by(main == main,
+                          nearby == nearby)) %>%
+  left_join(number_nearby,
+                by = join_by(main == main,
+                             brp == brp)) %>%
+  filter(count>10)
+
+data_sel_cri <- infor_selected[,c(1:3,13,16,19,22,23,26,29)]
+
+list_10dd <- data_sel_cri %>%
+  group_by(main, brp) %>%
+  arrange(dd) %>%
+  slice_head(n = 10)  %>%
+  mutate(cri = "distance")
+
+list_10noise <- data_sel_cri %>%
+  group_by(main, brp) %>%
+  arrange(GPS_GPS1) %>%
+  slice_head(n = 10) %>%
+  mutate(cri = "noise_gg")
+list_10noise1 <- data_sel_cri %>%
+  group_by(main, brp) %>%
+  arrange(GPS1_ERA1) %>%
+  slice_head(n = 10) %>%
+  mutate(cri = "noise_nb")
+
+data_plot = rbind(list_10dd, list_10noise, list_10noise1)
+long_df <- data_plot %>%
+  pivot_longer(cols = 4:10, names_to = "variable", values_to = "value")
+# visualize
+ggplot(long_df, aes(x = variable, y = value, color = cri)) +
+  theme_bw() + 
+  geom_boxplot() +
+  facet_wrap(~variable, scales = "free") +
+  labs(fill = "Group")
+ggplot(data = data_plot, aes(x = dd, col = as.factor(cri))) + 
+  theme_bw() + 
+  geom_boxplot(aes(y = GPS_GPS1))
+
+# extract final list ----
+
+final_list <- infor_selected %>%
+  left_join(distance_list, 
+            by = join_by(main == name_main, 
+                         nearby == name_nearby)) %>%
+  left_join(SD_info$mean_sd,
+            by = join_by(main == main,
+                         nearby == nearby)) %>%
+  left_join(number_nearby,
+            by = join_by(main == main,
+                         brp == brp)) %>%
+  group_by(main, brp) %>%
+  arrange(GPS_GPS1) %>%
+  slice_head(n = 10) 
+
+# select europe 
+
+latlon = read.table(file = paste0(path_data, "support/",
+                                  "gps_sta_NGL_dates_np_10.0yr_0.10gaps_bkl.txt"),
+                    header = TRUE, check.names = FALSE)
+latlon$name_ngl <- tolower(latlon$name_ngl)
+
+final_list_location <- final_list %>% 
+  left_join(latlon[,c(1:3)], by = join_by(main == name_ngl)) 
+final_list_location$lon <- ifelse(final_list_location$lon >0 & final_list_location$lon < 180, 
+                                  final_list_location$lon, 
+                                  -(360 -final_list_location$lon))  
+con = final_list_location$lon > -10 & final_list_location$lon < 50 &
+  final_list_location$lat > 30 & final_list_location$lat < 75
+final_list_location$select <- ifelse(con, 1, 0)
+library(ggplot2)
+library(maps)
+# Basic world map
+world_map <- map_data("world")
+
+# Plot the map and add points
+ggplot() +
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+  geom_point(data = final_list_location, aes(x = lon, y = lat, color = as.factor(select))) +
+  theme_minimal() +
+  labs(title = "Map of selected stations")
+
+final_list_location <- final_list_location %>%
+  filter(select ==1)
+write.table(final_list_location, file = paste0(path_results, "final_list_Europe.txt"), 
+            sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+
 # SIGNIFICANCE TEST -------------------------------------------------------
+#' We need: infor file, model ARMA file, 
+column_classes <- c("character", "Date", "character", rep("numeric",3),
+                    rep("Date", 4), rep("numeric", 24))
+infor_all = read.table(file = paste0(path_results, "final_list_Europe.txt"), 
+                       header = TRUE, colClasses = column_classes)
+
 
 

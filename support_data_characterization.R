@@ -95,7 +95,7 @@ diff.range.var <- function(x, day.list,s){
   }else{
     anu.min = aggregate(x~y, df, function(z) min(z, na.rm=TRUE))[,2]
     anu.max = aggregate(x~y, df, function(z) max(z, na.rm=TRUE))[,2]
-    r = (anu.max- anu.min)
+    r = (anu.max - anu.min)
     ifelse(length(anu.max)!=1, (max(r, na.rm = TRUE) - min(r, na.rm = TRUE)), NA)
     
   }
@@ -517,4 +517,7 @@ read_var <- function(path, name_main, name_nearby, name_six_diff){
   rownames(out) = NULL
   return(out)
 }
+
+
+
 
