@@ -302,9 +302,9 @@ column_classes <- c("character", "Date", "character", rep("numeric",3),
                     rep("Date", 4), rep("numeric", 24))
 infor_all = read.table(file = paste0(path_results, "final_list_Europe.txt"), 
                        header = TRUE, colClasses = column_classes)
-noise_models = read.table(file = paste0(path_results, "order_arma.txt"), 
+noise_model_all = read.table(file = paste0(path_results, "order_arma.txt"), 
                              header = FALSE, skip = 1)
-noise_model_all[,c(1:3)] <- noise_models[,c(1:3)] %>% 
+noise_model_all[,c(1:3)] <- noise_model_all[,c(1:3)] %>% 
   fill(everything(), .direction = "down")
 
 column_classes <- c(rep("character",2), rep("numeric",3),
@@ -322,21 +322,30 @@ for (i in c(1:1000)) {
                           main_st = main_st, 
                           nearby_st = nearby_st,
                           name_six_diff = name_six_diff)
-  beg = infor_all$main_beg_new[i]
-  end = infor_all$main_end_new[i]
   
-  six_noise_models = unlist(noise_model_all[which(
-    list_selected_segments$main == main_st &
-    list_selected_segments$nearby == nearby_st,
-  ),])
-  
-  if(main_st == infor_all$main[i+1] & brp = infor_all$brp[i+1]){
+  if(main_st == infor_all$main[i+1] & brp == infor_all$brp[i+1]){
     list_ind = c(2:6)
   }else{
     list_ind = c(1:6)
   }
   
+  six_noise_models = unlist(noise_model_all[which(
+    list_selected_segments$main == main_st &
+      list_selected_segments$nearby == nearby_st,
+  ),])
+  
   for (j in list_ind) {
+    if(j == 1){
+      beg = infor_all$main_beg_new[i]
+      end = infor_all$main_end_new[i]
+    }else if (j == 5){
+      beg = infor_all$nearby_beg_new[i]
+      end = infor_all$nearby_end_new[i]
+    }else{
+      beg = max(infor_all$nearby_beg_new[i], infor_all$nearby_beg_new[i])
+      end = min(infor_all$nearby_end_new[i], infor_all$nearby_end_new[i])
+    }
+    
     name_series = name_six_diff[j]
     df = df_data[,c("Date", name_series)] %>% 
       filter(Date >= beg & Date <= end) 
