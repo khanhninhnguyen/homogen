@@ -20,6 +20,20 @@ construct_design <- function(data_df, name_series, break_ind, one_year){
   
   return(Data.mod)
 }
+
+my.estimator <- function(estimator,x){
+  x1 = na.omit(x)
+  if(estimator == "mad"){
+    n0 = length(x1)
+    f <- qnorm(3/4)*(1-0.7612/n0 - 1.123/(n0^2))
+    y = mad(x1, constant = 1/f)
+  }else if(estimator == "Qn"){
+    y = robustbase::Qn(x1)
+  }else if(estimator == "Sca"){
+    y = robustbase::scaleTau2(x1, consistency = "finiteSample")
+  }
+  return(y)
+}
 # construct the correlation matrix 
 cor_matrix <- function(phi, theta, n.full, n.true){
   if(phi ==0 & theta ==0){
@@ -155,8 +169,47 @@ FGLS1 <- function(design.m, tol, day.list, noise.model, length.wind0){
   return(list( coefficients = fit.gls$Coefficients, var = w0, residual = resi0, fit = fit.val, t.table=t.table, coef.arma = coef.arma,  
                i=i, j = j, change1= change1, all.out = fit.gls, t = (end_time - start_time), design.matrix = design.m))
 }
+
 remove_na_2sides <- function(df, name.series){
   a = which(is.na(df[name.series])== FALSE)
   df = df[c(min(a):(max(a))), ]
   return(df)
+}
+
+RobEstiSlidingVariance.S <- function(Y, name.var, alpha, estimator, length.wind){# require date in the dataset, return std at time t
+  Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
+  x = unlist(Y1[name.var], use.names = FALSE)
+  n = nrow(Y1)
+  sigma.est1 = rep(NA, n)
+  for (i in c(1:n)) {
+    begin = max(i-(length.wind-1),1)
+    end = min(n, i+length.wind)
+    x.i = x[begin:end]
+    x.idiff = (x.i)
+    thre = 30
+    if(i < 30|i>(n-30)){thre = 16}
+    if(length(na.omit(x.idiff)) <= thre){
+      sd <- NA
+    }else{
+      sd <- my.estimator(estimator = estimator, x.idiff)
+    }
+    sigma.est1[i] <- sd
+  }
+  # linear regression of the variance for gaps  MAYBE REPLACE BY INTERPOLATION FUNCTION
+  s = sigma.est1
+  if (sum(is.na(s)) != 0 & sum(is.na(s)) != length(s)){
+    ts.s = c(1:n)
+    na.ind = which(is.na(s))
+    if(na.ind[1] == 1){
+      ind.stop = which(is.na(s)==FALSE)[1]-1
+      na.ind <- na.ind[-c(1:ind.stop)]
+    }else if (is.na(s[n]) == 1){
+      m = which(is.na(s)==FALSE)
+      ind.start = m[length(m)]
+      na.ind <- na.ind[-which(na.ind %in% c(ind.start:n))]
+    }
+    s[na.ind] <- approx(ts.s, s, xout=na.ind)$y
+  }
+  sigma.est = s[which(Y1$date %in% Y$date)]
+  return(sigma.est^2)
 }

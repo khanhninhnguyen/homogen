@@ -302,8 +302,19 @@ column_classes <- c("character", "Date", "character", rep("numeric",3),
                     rep("Date", 4), rep("numeric", 24))
 infor_all = read.table(file = paste0(path_results, "final_list_Europe.txt"), 
                        header = TRUE, colClasses = column_classes)
+noise_models = read.table(file = paste0(path_results, "order_arma.txt"), 
+                             header = FALSE, skip = 1)
+noise_model_all[,c(1:3)] <- noise_models[,c(1:3)] %>% 
+  fill(everything(), .direction = "down")
 
-for (i in c(1:10)) {
+column_classes <- c(rep("character",2), rep("numeric",3),
+                    rep("Date", 6))
+list_selected_segments = read.table(file = paste0(path_results, 
+                                                  "List_longest_segment.txt"), 
+                                    header = TRUE, colClasses = column_classes)
+for (i in c(1:1000)) {
+  fit.i = list()
+  
   main_st = infor_all$main[i]
   brp = infor_all$brp[i]
   nearby_st = infor_all$nearby[i]
@@ -314,25 +325,58 @@ for (i in c(1:10)) {
   beg = infor_all$main_beg_new[i]
   end = infor_all$main_end_new[i]
   
-  for (j in c(1:6)) {
+  six_noise_models = unlist(noise_model_all[which(
+    list_selected_segments$main == main_st &
+    list_selected_segments$nearby == nearby_st,
+  ),])
+  
+  if(main_st == infor_all$main[i+1] & brp = infor_all$brp[i+1]){
+    list_ind = c(2:6)
+  }else{
+    list_ind = c(1:6)
+  }
+  
+  for (j in list_ind) {
     name_series = name_six_diff[j]
-    df_test = df_data[,c("Date", name_series)] %>% 
-      filter(Date >= beg & Date <= end)
-   
+    df = df_data[,c("Date", name_series)] %>% 
+      filter(Date >= beg & Date <= end) 
+
+    # Split the data frame
+    df_before <- df[df$Date <= brp, ]
+    df_after <- df[df$Date > brp, ]
+    
+    # Count non-missing values and limit to first 1000 if necessary
+    if (sum(!is.na(df_before[[name_series]])) > 1000) {
+      df_before <- df_before %>% filter(Date > (brp - 1000))
+    }
+    
+    if (sum(!is.na(df_after[[name_series]])) > 1000) {
+      df_after <- df_after %>% filter(Date <= (brp + 1000))
+    }
+    
+    new_df <- rbind(df_before, df_after)
+    
+    df_test <- tidyr::complete(new_df,
+                               Date = seq(min(new_df$Date),
+                                          max(new_df$Date), 
+                                          by = "day"))
+    
+     
     ind_brp = which(df_test[["Date"]] == brp)
     Data_mod = construct_design(data_df = df_test, 
                                 name_series = name_series,
                                 break_ind = ind_brp, 
                                 one_year = 365)
-    fit.fgls = FGLS1(design.m = Data_mod,
+    
+    noise_model = six_noise_models[(j*3-2):(j*3)]
+    fit_fgls = FGLS1(design.m = Data_mod,
                      tol= 0.01, 
                      day.list = df_test$Date, 
                      noise.model = noise_model,
                      length.wind0 = 60)
-    
-    
+    fit.i[[name_series]] = fit.fgls
   }
-  
-  
+  print(i)
+  save(fit.i, file = paste0(path_results, main_st, brp, nearby_st, "fgls.RData"))
 }
 
