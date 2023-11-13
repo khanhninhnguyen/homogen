@@ -168,16 +168,19 @@ check_sig <- function(p.val, alpha){
 
 model.iden <- function(order){
   model = c()
-  if (identical(order, c(1,0,1))){ model = "ARMA(1,1)"}
-  else if (identical(order, c(1,0,0))){ model = "AR(1)"}
-  else if (identical(order, c(0,0,1))){ model = "MA(1)"}
-  else if (identical(order, c(0,0,0))){ model = "White"}
-  else if (identical(order, c(2,0,0))){ model = "AR(2)"}
-  else if (identical(order, c(2,0,1))){ model = "ARMA(2,1)"}
-  else if (identical(order, c(1,0,2))){ model = "ARMA(1,2)"}
-  else if (identical(order, c(0,0,2))){ model = "MA(2)"}
-  else if (identical(order, c(2,0,2))){ model = "ARMA(2,2)"}
-  
+  if(all(is.na(order))){
+    model = NA
+  } else {
+    if (identical(order, c(1,0,1))){ model = "ARMA(1,1)"}
+    else if (identical(order, c(1,0,0))){ model = "AR(1)"}
+    else if (identical(order, c(0,0,1))){ model = "MA(1)"}
+    else if (identical(order, c(0,0,0))){ model = "White"}
+    else if (identical(order, c(2,0,0))){ model = "AR(2)"}
+    else if (identical(order, c(2,0,1))){ model = "ARMA(2,1)"}
+    else if (identical(order, c(1,0,2))){ model = "ARMA(1,2)"}
+    else if (identical(order, c(0,0,2))){ model = "MA(2)"}
+    else if (identical(order, c(2,0,2))){ model = "ARMA(2,2)"}
+  }
   return(model)
 }
 
@@ -415,20 +418,16 @@ characterize <- function(list_infor, path_data, path_results){
               sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 }
 
-plot_for_paper <- function(arma_order, arma_coef, list_infor, name_six_diff){
-  order_arma = read.table(file = paste0(path_results, "order_arma.txt"), header = TRUE)
-  coef_arma = read.table(file = paste0(path_results, "coef_arma.txt"), header = TRUE)
+plot_dist_model <- function(arma_order, name_fig, 
+                            name_six_diff, sub_title, tag_fig){
   
   list_model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
   
-  text1 = "Distance < 50 km"
-  text2 = "Distance > 50 km"
-  
-  length_data = nrow(order_arma)
+  length_data = nrow(arma_order)
   six_model = data.frame(matrix(NA, ncol = 6, nrow = length_data))
   for (i in 1:6) {
     six_model[,i] = sapply(c(1:length_data), function(x) {
-      model.iden(as.numeric(unlist(order_arma[x, (3*i-2):(3*i)])))
+      model.iden(as.numeric(unlist(arma_order[x, (3*i-2):(3*i)])))
     })
   }
   colnames(six_model) <- name_six_diff
@@ -439,42 +438,42 @@ plot_for_paper <- function(arma_order, arma_coef, list_infor, name_six_diff){
     six_values <- c( six_values, value_count)
   }
   
-  all_model <- cbind(list_infor[,c(1:3)], six_model) %>%
-    mutate(main_nb = if_else(main < nearby, 
-                             paste(main, nearby, sep = ""), 
-                             paste(nearby, main, sep = ""))) 
-  
-  consistency_check <- cbind(list_infor[,c(1:3)], six_model) %>%
-    mutate(main_nb = if_else(main < nearby, 
-                             paste(main, nearby, sep = ""), 
-                             paste(nearby, main, sep = "")))  %>%
-    group_by(main_nb) %>%
-    summarise(Consistent = all(GPS_ERA == GPS_ERA[1]) &
-                all(GPS_GPS1 == GPS_GPS1[1]) &
-                all(GPS_ERA1 == GPS_ERA1[1]) &
-                all(ERA_ERA1 == ERA_ERA1[1]) &
-                all(GPS1_ERA1 == GPS1_ERA1[1]) &
-                all(GPS1_ERA == GPS1_ERA[1]),
-              Count = n()
-    ) %>%
-    ungroup()
-  
+  # all_model <- cbind(list_infor[,c(1:3)], six_model) %>%
+  #   mutate(main_nb = if_else(main < nearby, 
+  #                            paste(main, nearby, sep = ""), 
+  #                            paste(nearby, main, sep = ""))) 
+  # 
+  # consistency_check <- cbind(list_infor[,c(1:3)], six_model) %>%
+  #   mutate(main_nb = if_else(main < nearby, 
+  #                            paste(main, nearby, sep = ""), 
+  #                            paste(nearby, main, sep = "")))  %>%
+  #   group_by(main_nb) %>%
+  #   summarise(Consistent = all(GPS_ERA == GPS_ERA[1]) &
+  #               all(GPS_GPS1 == GPS_GPS1[1]) &
+  #               all(GPS_ERA1 == GPS_ERA1[1]) &
+  #               all(ERA_ERA1 == ERA_ERA1[1]) &
+  #               all(GPS1_ERA1 == GPS1_ERA1[1]) &
+  #               all(GPS1_ERA == GPS1_ERA[1]),
+  #             Count = n()
+  #   ) %>%
+  #   ungroup()
+  # 
   # Function to check consistency for each model
-  model_inconsistencies <- all_model %>%
-    group_by(main_nb) %>%
-    summarise(
-      Inconsistency_GPS_ERA = n_distinct(GPS_ERA),
-      Inconsistency_GPS_GPS1 = n_distinct(GPS_GPS1),
-      Inconsistency_GPS_ERA1 = n_distinct(GPS_ERA1),
-      Inconsistency_ERA_ERA1 = n_distinct(ERA_ERA1),
-      Inconsistency_GPS1_ERA1 = n_distinct(GPS1_ERA1),
-      Inconsistency_GPS1_ERA = n_distinct(GPS1_ERA)
-    )
+  # model_inconsistencies <- all_model %>%
+  #   group_by(main_nb) %>%
+  #   summarise(
+  #     Inconsistency_GPS_ERA = n_distinct(GPS_ERA),
+  #     Inconsistency_GPS_GPS1 = n_distinct(GPS_GPS1),
+  #     Inconsistency_GPS_ERA1 = n_distinct(GPS_ERA1),
+  #     Inconsistency_ERA_ERA1 = n_distinct(ERA_ERA1),
+  #     Inconsistency_GPS1_ERA1 = n_distinct(GPS1_ERA1),
+  #     Inconsistency_GPS1_ERA = n_distinct(GPS1_ERA)
+  #   )
   
   res_plot = data.frame(series = rep(list_name_test, each = 4), 
                         mod = rep(list_model, 6),
                         value = six_values, 
-                        n = rep(length_data,24))
+                        n = c(rep(sum(six_values[1:4]), 4),rep(length_data,20)))
   res_plot$pct = res_plot$value/res_plot$n*100
   res_plot$series = factor(res_plot$series, 
                            levels=reoder_list_name)
@@ -484,19 +483,90 @@ plot_for_paper <- function(arma_order, arma_coef, list_infor, name_six_diff){
   p1 <- ggplot(res_plot, aes(fill=mod, y=pct, x=series, label = value)) + 
     geom_bar(position="dodge", stat="identity", width = 0.5)+theme_bw()+ 
     xlab("") + ylab("Percentage")+
-    labs(tag = "(a)", subtitle = text1) +
+    labs(tag = tag_fig, subtitle = sub_title) +
     geom_text(position = position_dodge(width = .5),    # move to center of bars
               vjust = -0.5,    # nudge above top of bar
               size = 1)+
     ylim(c(0,100))+
-    theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
-          axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), 
-          plot.tag = element_text(size = 6) , plot.subtitle = element_text(size = 6),
-          legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
+    theme(axis.text.x = element_text(size = 4.5), 
+          axis.text.y = element_text(size = 5),
+          legend.text=element_text(size=4),
+          axis.title = element_text(size = 5), 
+          legend.key.size = unit(0.2, "cm"), 
+          plot.tag = element_text(size = 6) ,
+          plot.subtitle = element_text(size = 6),
+          legend.title=element_blank(), 
+          legend.box.spacing = unit(0, "pt"),
+          plot.margin = rep(unit(0,"null"),4))
   
-  ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima_test.jpg" ), plot = p1, width = 14, height = 5, units = "cm", dpi = 1200)
+  ggsave(paste0(path_results,"attribution/model_distribute_",name_fig,".jpg" ), 
+         plot = p1, width = 8, height = 5, units = "cm", dpi = 1200)
+}
+
+plot_arma_coef <- function(arma_order, arma_coef,list_infor,
+                           name_fig, sub_title, tag_fig){
+  list_model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
   
+  length_data = nrow(arma_order)
+  six_model = data.frame(matrix(NA, ncol = 6, nrow = length_data))
+  for (i in 1:6) {
+    six_model[,i] = sapply(c(1:length_data), function(x) {
+      model.iden(as.numeric(unlist(arma_order[x, (3*i-2):(3*i)])))
+    })
+  }
+  colnames(six_model) <- name_six_diff
   
+  list_models = six_model %>%
+    mutate(name = list_infor$main)
+  list_coeffs = arma_coef[,seq(1,24,2)]%>%
+    mutate(name = list_infor$main)
+  names(list_coeffs)[1:12] <- c(rbind(outer(c("Phi-", "Theta-"), 
+                                  name_six_diff, paste0)))
+  
+  df_models_long <- list_models %>%
+    pivot_longer(cols = 1:6, names_to = "Variable", values_to = "Model")
+  
+  df_coefficients_long <- list_coeffs %>%
+    pivot_longer(cols = 1:12, names_to = "Variable_Coeff", values_to = "Coefficient") %>%
+    separate(Variable_Coeff, into = c("Type", "Variable"), sep = "-")
+  
+  df_combined <- merge(df_models_long, df_coefficients_long, by = c("name", "Variable"))
+  
+  dat_p <- df_combined %>%
+    filter((Model == "AR(1)" & Type == "Phi") |
+             (Model == "MA(1)" & Type == "Theta") |
+             (Model == "ARMA(1,1)")) %>%
+    mutate(Variable = case_when(
+      Variable == "GPS-ERA"   ~ "G-E",
+      Variable == "GPS_ERA1"  ~ "G-E'",
+      Variable == "GPS_GPS1"  ~ "G-G'",
+      Variable == "GPS1_ERA"  ~ "G'-E",
+      Variable == "GPS1_ERA1" ~ "G'-E'",
+      Variable == "ERA_ERA1"  ~ "E-E'",
+      TRUE                    ~ Variable  # Default case to keep original values
+    ))
+  dat_p$Variable = factor(dat_p$Variable,  levels = reoder_list_name)
+  
+  p <- ggplot(data = dat_p, aes( x = Variable, y = Coefficient, fill = Model, col = Type)) + theme_bw()+
+    geom_boxplot(lwd=0.2, outlier.size=0.2)+
+    xlab("") + ylab(" values of coefficients ") + ylim(-1,1)+
+    labs(subtitle = sub_title, tag = tag_fig) + 
+    theme(axis.text.x = element_text(size = 4.5),
+          axis.text.y = element_text(size = 5),
+          legend.text=element_text(size=4),
+          axis.title = element_text(size = 5),
+          legend.key.size = unit(0.2, "cm"), 
+          plot.tag = element_text(size = 6) ,
+          plot.subtitle = element_text(size = 6),
+          legend.title=element_blank(), 
+          legend.box.spacing = unit(0, "pt"), 
+          plot.margin = rep(unit(0,"null"),4))+
+    scale_color_manual(values = c("green", "deepskyblue4"),
+                       labels = expression(Phi, theta))+
+    scale_fill_manual(values = c("#D6604D", "#FDDBC7", "#92C5DE"))
+  
+  ggsave(paste0(path_results,"attribution/coeff_distribute_",name_fig,".jpg" ), 
+         plot = p, width = 8, height = 5, units = "cm", dpi = 1200)
   
 }
 
