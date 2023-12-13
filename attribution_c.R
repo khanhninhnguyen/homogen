@@ -106,7 +106,9 @@ list_selected <- infor_all %>%
 
 
 
-
+grouped_counts <- list_selected %>%
+  group_by(main, brp) %>%
+  summarise(m = mean(n_joint_bef))
 
 
 
