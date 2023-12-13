@@ -4,13 +4,13 @@ remove_na_2sides_df <- function(df, name_date){
   df0 <- df
   df[name_date] <- NULL
   all_na_rows <- rowSums(is.na(df)) == ncol(df)
-    
+  
   first_valid_index <- which(!all_na_rows)[1]
   last_valid_index <- tail(which(!all_na_rows), 1)
-    
+  
   cleaned_df <- df0[c(first_valid_index:last_valid_index), ]
-    
-    return(cleaned_df)
+  
+  return(cleaned_df)
 }
 
 construct_design <- function(data.df, name.series, break.ind, one.year = 365){
@@ -473,7 +473,11 @@ plot_dist_model <- function(arma_order, name_fig,
   res_plot = data.frame(series = rep(list_name_test, each = 4), 
                         mod = rep(list_model, 6),
                         value = six_values, 
-                        n = c(rep(sum(six_values[1:4]), 4),rep(length_data,20)))
+                        n = c(rep(sum(six_values[1:4]), 4),
+                              rep(length_data,12),
+                              rep(sum(six_values[17:20]), 4),
+                              rep(length_data,4)
+                        ))
   res_plot$pct = res_plot$value/res_plot$n*100
   res_plot$series = factor(res_plot$series, 
                            levels=reoder_list_name)
@@ -503,6 +507,7 @@ plot_dist_model <- function(arma_order, name_fig,
          plot = p1, width = 8, height = 5, units = "cm", dpi = 1200)
 }
 
+#input arma coefficient have 4 columns for each
 plot_arma_coef <- function(arma_order, arma_coef,list_infor,
                            name_fig, sub_title, tag_fig){
   list_model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
@@ -517,18 +522,24 @@ plot_arma_coef <- function(arma_order, arma_coef,list_infor,
   colnames(six_model) <- name_six_diff
   
   list_models = six_model %>%
-    mutate(name = list_infor$main)
+    mutate(name = paste(list_infor$main, list_infor$nearby, sep = "-"))
   list_coeffs = arma_coef[,seq(1,24,2)]%>%
-    mutate(name = list_infor$main)
+    mutate(name =  paste(list_infor$main, list_infor$nearby, sep = "-"))
   names(list_coeffs)[1:12] <- c(rbind(outer(c("Phi-", "Theta-"), 
-                                  name_six_diff, paste0)))
+                                            name_six_diff, paste0)))
   
   df_models_long <- list_models %>%
-    pivot_longer(cols = 1:6, names_to = "Variable", values_to = "Model")
+    pivot_longer(cols = 1:6,
+                 names_to = "Variable", 
+                 values_to = "Model") 
   
   df_coefficients_long <- list_coeffs %>%
-    pivot_longer(cols = 1:12, names_to = "Variable_Coeff", values_to = "Coefficient") %>%
-    separate(Variable_Coeff, into = c("Type", "Variable"), sep = "-")
+    pivot_longer(cols = 1:12,
+                 names_to = "Variable_Coeff", 
+                 values_to = "Coefficient") %>%
+    separate(Variable_Coeff,
+             into = c("Type", "Variable"), 
+             sep = "-")  
   
   df_combined <- merge(df_models_long, df_coefficients_long, by = c("name", "Variable"))
   
@@ -537,14 +548,12 @@ plot_arma_coef <- function(arma_order, arma_coef,list_infor,
              (Model == "MA(1)" & Type == "Theta") |
              (Model == "ARMA(1,1)")) %>%
     mutate(Variable = case_when(
-      Variable == "GPS-ERA"   ~ "G-E",
+      Variable == "GPS1_ERA1" ~ "G'-E'",
       Variable == "GPS_ERA1"  ~ "G-E'",
       Variable == "GPS_GPS1"  ~ "G-G'",
       Variable == "GPS1_ERA"  ~ "G'-E",
-      Variable == "GPS1_ERA1" ~ "G'-E'",
       Variable == "ERA_ERA1"  ~ "E-E'",
-      TRUE                    ~ Variable  # Default case to keep original values
-    ))
+      Variable == "GPS_ERA"   ~ "G-E"))
   dat_p$Variable = factor(dat_p$Variable,  levels = reoder_list_name)
   
   p <- ggplot(data = dat_p, aes( x = Variable, y = Coefficient, fill = Model, col = Type)) + theme_bw()+
@@ -582,6 +591,31 @@ read_var <- function(path, name_main, name_nearby, name_six_diff){
   return(out)
 }
 
-
+extract_info_SD <- function(path, list_segment, name_six_diff, path_results){
+  n = nrow(list_segment)
+  a <- data.frame(matrix(NA, nrow = n, ncol = 6))
+  colnames(a) <- name_six_diff
+  mean_sd <- a
+  range_sd <- a
+  
+  for (i in c(1:n)) {
+    var_6diff = read_var(path = path, 
+                         name_main = list_segment$main[i],
+                         name_nearby = list_segment$nearby[i],
+                         name_six_diff = name_six_diff)
+    mean_sd[i,] = colMeans(sqrt(var_6diff[,c(name_six_diff)]),
+                           na.rm = TRUE)
+    range_sd[i,] = sapply(name_six_diff, function(x){
+      range_cal(variable = sqrt(var_6diff[[x]]), 
+                day.list = var_6diff$Date)})
+    print(i)
+  }
+  write.table(mean_sd, file = paste0(path_results, "mean_sd.txt"), 
+              sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+  write.table(range_sd, file = paste0(path_results, "range_sd.txt"), 
+              sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
+  out = list(mean_sd = mean_sd, range_sd = range_sd)
+  return(out)
+}  
 
 

@@ -40,6 +40,7 @@ list_brp = extract_list_brp(date_mean)
 list_brp <- list_brp %>%
   group_by(name) %>%
   mutate(cluster_index = get_clusters(brp, 80)) 
+
 # infor_all = extract_info_nearby(path_data = path_data_NGL,
 #                                 list_brp = list_brp,
 #                                 path_results = path_results)
@@ -112,7 +113,8 @@ characterize(list_infor = df_infor, path_data = path_data_NGL,
 
 
 # select the list of cases to do the test ---------------------------------
-# by limiting number of nearby vs distance, noise 
+# by limiting number of nearby vs distance, noise - this is the output of 
+# old function, new function is separated mean and range in 2 files
 SD_info = get(load(file = paste0(path_results, "mean_range_SD.RData")))
 SD_info$mean_sd$main = list_selected_segments$main
 SD_info$mean_sd$nearby = list_selected_segments$nearby
@@ -166,7 +168,7 @@ list_10noise1 <- data_sel_cri %>%
 data_plot = rbind(list_10dd, list_10noise, list_10noise1)
 long_df <- data_plot %>%
   pivot_longer(cols = 4:10, names_to = "variable", values_to = "value")
-# visualize
+# visualize----
 ggplot(long_df, aes(x = variable, y = value, color = cri)) +
   theme_bw() + 
   geom_boxplot() +
