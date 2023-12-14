@@ -93,22 +93,36 @@ infor_all <- infor_all %>%
             by = join_by(main == main, 
                         nearby == nearby)) 
 
+# if there are more than 10 nearby: select the length and noise 
 list_selected <- infor_all %>% 
-  mutate(n_joint = n_joint_bef + n_joint_aft) %>%
+  filter(n_joint_bef>=100 & n_joint_aft>=100) %>%
   group_by(main, brp) %>%
-  filter(if (n() >= 10 && any(n_joint_bef > 400) && any(n_joint_aft > 400)) {
+  filter(if (n() >= 10)) {
     n_joint_bef > 400 & n_joint_aft > 400 & dd < 100
   } else {
     TRUE
-  }) %>%
-  arrange(SD_GPS_GPS1) %>%  # Arrange by 'sd' within each group
-  slice_head(n = min(10, n()))
-
-
-
-grouped_counts <- list_selected %>%
-  group_by(main, brp) %>%
-  summarise(m = mean(n_joint_bef))
+  })
+  # mutate(n_joint = n_joint_bef + n_joint_aft) %>%
+  # group_by(main, brp) %>%
+  # filter(if (n() >= 10 && any(n_joint_bef > 400) && any(n_joint_aft > 400)) {
+  #   n_joint_bef > 400 & n_joint_aft > 400 & dd < 100
+  # } else {
+  #   TRUE
+  # }) %>%
+  # arrange(SD_GPS_GPS1) %>%  # Arrange by 'sd' within each group
+  # slice_head(n = min(10, n()))
+# to check percentage of fully homogenized stations 
+# a = unique(infor_all[,c(1,2,6)])
+# noise = aggregate(noise ~ main, data = a, FUN = function(x) length(which(x!=0)))
+# all <- aggregate(begin ~ name, data = date_mean, FUN = length)
+# tested <- aggregate(cbind(UniqueDates = brp) ~ main,
+#                     data = list_selected, FUN = function(x) length(unique(x))) %>%
+#   left_join(all,
+#             by = join_by(main == name)) %>%
+#   left_join(noise,
+#             by = join_by(main == main)) %>%
+#   mutate(r = UniqueDates/(begin-1-noise))
+# table(tested$r == 1)
 
 
 
