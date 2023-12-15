@@ -46,7 +46,8 @@ column_classes <- c("character", "Date", "character", rep("numeric",3),
                     rep("Date", 4), rep("numeric", 12))
 infor_all = read.table(file = paste0(path_results, "pre_info_test.txt"), 
                        header = TRUE, colClasses = column_classes)
-
+#' modify the length of series when it is the begining of cluster:
+infor_all$n_main_aft <- infor_all$n_main_aft - infor_all$dist_noise
 #' add distance 
 rpt_data <- read.table(file = paste0(path_data, "support/liste_main20yr_1nearby_200km_500m_np250_nd250.rpt"),
                        header = TRUE, check.names = FALSE) 
@@ -72,7 +73,7 @@ characterize(list_infor = df_infor, path_data = path_data_NGL,
 
 
 # FGLS TEST ---------------------------------------------------------------
-#' select first nearby to test by SD and distance 
+#' select first nearby to test by length and distance 
 #' read data
 SD_infor = get(load(file = paste0(path_results, "mean_range_SD.RData")))
 
@@ -93,6 +94,8 @@ infor_all <- infor_all %>%
             by = join_by(main == main, 
                         nearby == nearby)) 
 
+
+
 # if there are more than 10 nearby: select the length and noise 
 list_selected <- infor_all %>% 
   filter(n_joint_bef>=100 & n_joint_aft>=100) %>%
@@ -112,9 +115,9 @@ list_selected <- infor_all %>%
   # arrange(SD_GPS_GPS1) %>%  # Arrange by 'sd' within each group
   # slice_head(n = min(10, n()))
 # to check percentage of fully homogenized stations 
-# a = unique(infor_all[,c(1,2,6)])
+a = unique(infor_all[,c(1,2,6)])
 # noise = aggregate(noise ~ main, data = a, FUN = function(x) length(which(x!=0)))
-# all <- aggregate(begin ~ name, data = date_mean, FUN = length)
+all <- aggregate(begin ~ name, data = date_mean, FUN = length)
 # tested <- aggregate(cbind(UniqueDates = brp) ~ main,
 #                     data = list_selected, FUN = function(x) length(unique(x))) %>%
 #   left_join(all,
