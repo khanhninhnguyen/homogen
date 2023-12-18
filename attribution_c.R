@@ -48,19 +48,32 @@ infor_all = read.table(file = paste0(path_results, "pre_info_test.txt"),
                        header = TRUE, colClasses = column_classes)
 #' modify the length of series when it is the begining of cluster:
 infor_all$n_main_aft <- infor_all$n_main_aft - infor_all$dist_noise
-#' add distance 
+infor_all$n_joint_aft <- infor_all$n_joint_aft - infor_all$dist_noise
+
+#' add distance & remove the cluster by the first point
 rpt_data <- read.table(file = paste0(path_data, "support/liste_main20yr_1nearby_200km_500m_np250_nd250.rpt"),
                        header = TRUE, check.names = FALSE) 
 distance_list = unique(rpt_data[,c(1,3,13,14)])
 infor_all <- infor_all %>% 
   left_join(distance_list, 
             by = join_by(main == name_main, 
-                         nearby == name_nearby))
+                         nearby == name_nearby)) 
+
+#' Print general information 
+noise = aggregate(noise ~ main, data = unique(infor_all[,c(1,2,6)]), 
+                  FUN = function(x) length(which(x>1)))
+total_detection <- aggregate(begin ~ name, data = date_mean, FUN = length) %>%
+  filter(name %in% infor_all$main == TRUE) %>%
+  mutate(tot = begin - 1) %>%
+  left_join(noise, by = join_by(name == main)) %>%
+  mutate(final_tot = tot - noise)
+
+print(paste0("total number of detection: ", sum(total_detection$tot)))
+print(paste0("total noise are removed: ", sum(total_detection$noise)))
+print(paste0("total number of detection after noise removal: ", sum(total_detection$final_tot)))
 
 
-
-
-
+infor_all <- infor_all %>% filter(noise<2)
 
 
 # CHARACTERIZATION --------------------------------------------------------
@@ -89,22 +102,41 @@ list_longest_segments = read.table(file = paste0(path_results,
             end_main, end_nearby, end_joint))
 #' filtering 
 #' 
-infor_all <- infor_all %>% 
-  left_join(list_longest_segments,
-            by = join_by(main == main, 
-                        nearby == nearby)) 
+# infor_all <- infor_all %>% 
+#   left_join(list_longest_segments,
+#             by = join_by(main == main, 
+#                         nearby == nearby)) 
+
+#' investigate the length and distance for each changepoint
+#' 
+#' 
+n_min = 100
+
+agg_infor <- infor_all %>%
+  filter(n_main_bef > n_min & n_main_aft > n_min) %>%
+  group_by(main, brp) %>%
+  summarise(
+    mean_n_joint_bef = mean(n_joint_bef, na.rm = TRUE),
+    mean_n_joint_aft = mean(n_joint_aft, na.rm = TRUE), 
+    mean_d = mean(dd, na.rm = TRUE), 
+  )
+
+tested <- aggregate(cbind(UniqueDates = brp) ~ main,
+                    data = agg_infor, FUN = function(x) length(unique(x)))
+rate = tested$UniqueDates/total_detection$final_tot
+
+print(paste0("total number of fully homogenized: ", length(which(rate ==1))))
+
+hist(agg_infor$mean_d, breaks=seq(from=0, to=200, by=10),
+     main = "Mean of distance to nearby", 
+     xlab = "", 
+     ylab = "Frequency")
+
+
 
 
 
 # if there are more than 10 nearby: select the length and noise 
-list_selected <- infor_all %>% 
-  filter(n_joint_bef>=100 & n_joint_aft>=100) %>%
-  group_by(main, brp) %>%
-  filter(if (n() >= 10)) {
-    n_joint_bef > 400 & n_joint_aft > 400 & dd < 100
-  } else {
-    TRUE
-  })
   # mutate(n_joint = n_joint_bef + n_joint_aft) %>%
   # group_by(main, brp) %>%
   # filter(if (n() >= 10 && any(n_joint_bef > 400) && any(n_joint_aft > 400)) {
