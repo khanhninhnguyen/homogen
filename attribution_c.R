@@ -110,7 +110,7 @@ list_longest_segments = read.table(file = paste0(path_results,
 #' investigate the length and distance for each changepoint
 #' 
 #' 
-n_min = 600
+n_min = 400
 
 agg_infor <- infor_all %>%
   filter(n_main_bef > n_min & n_main_aft > n_min) %>%
@@ -124,9 +124,11 @@ agg_infor <- infor_all %>%
 
 tested <- aggregate(cbind(UniqueDates = brp) ~ main,
                     data = agg_infor, FUN = function(x) length(unique(x)))
-rate = tested$UniqueDates/total_detection$final_tot
 
-print(paste0("total number of fully homogenized: ", length(which(rate ==1))))
+rate = left_join(total_detection, tested, by = join_by(name == main)) %>%
+  mutate(r = UniqueDates/final_tot)
+
+print(paste0("total number of fully homogenized: ", length(which(rate$r ==1))))
 summary(agg_infor$total_rows)
 
 hist(agg_infor$mean_d, breaks=seq(from=0, to=200, by=10),
