@@ -496,3 +496,22 @@ list_longest_segment <- function(path_data, date_mean, list_brp, path_results){
               sep="\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
   return(df_infor)
 }
+
+# Define a custom function, respect the name of columns 
+select_rows_based_on_conditions <- function(df) {
+  df_filtered <- df %>% filter(dd < 50)
+  
+  if (nrow(df_filtered) > 10) {
+    df_sorted <- df_filtered %>% 
+      arrange(desc(n_joint_min)) %>%
+      slice_max(order_by = n_joint_min, n = 10)
+  } else if (nrow(df_filtered) < 10) {
+    df_sorted <- df %>% 
+      arrange(dd) %>% 
+      slice_head(n = 10)
+  } else {
+    df_sorted <- df_filtered
+  }
+  
+  return(df_sorted)
+}

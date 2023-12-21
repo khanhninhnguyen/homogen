@@ -86,7 +86,7 @@ characterize(list_infor = df_infor, path_data = path_data_NGL,
 
 
 # FGLS TEST ---------------------------------------------------------------
-#' select first nearby to test by length and distance 
+#select first nearby to test by length and distance ---------------------
 #' read data
 SD_infor = get(load(file = paste0(path_results, "mean_range_SD.RData")))
 
@@ -110,10 +110,12 @@ list_longest_segments = read.table(file = paste0(path_results,
 #' investigate the length and distance for each changepoint
 #' 
 #' 
-n_min = 400
+n_min = 200
 
 agg_infor <- infor_all %>%
-  filter(n_main_bef > n_min & n_main_aft > n_min) %>%
+  mutate(n_joint_min = pmin(n_joint_aft, n_joint_bef)) %>%
+  filter(n_main_bef > n_min & n_main_aft > n_min & n_joint_min > n_min) %>% 
+  # filter(n_main_bef > n_min & n_main_aft > n_min & dd<50) %>%
   group_by(main, brp) %>%
   summarise(
     mean_n_joint_bef = mean(n_joint_bef, na.rm = TRUE),
@@ -136,33 +138,113 @@ hist(agg_infor$mean_d, breaks=seq(from=0, to=200, by=10),
      xlab = "", 
      ylab = "Frequency")
 
+#' last decision: n_main >200, 10 nearby: d<100 if more than 10, then longest 
 
 
-
-
-# if there are more than 10 nearby: select the length and noise 
-  # mutate(n_joint = n_joint_bef + n_joint_aft) %>%
-  # group_by(main, brp) %>%
-  # filter(if (n() >= 10 && any(n_joint_bef > 400) && any(n_joint_aft > 400)) {
-  #   n_joint_bef > 400 & n_joint_aft > 400 & dd < 100
-  # } else {
-  #   TRUE
-  # }) %>%
-  # arrange(SD_GPS_GPS1) %>%  # Arrange by 'sd' within each group
-  # slice_head(n = min(10, n()))
-# to check percentage of fully homogenized stations 
-a = unique(infor_all[,c(1,2,6)])
-# noise = aggregate(noise ~ main, data = a, FUN = function(x) length(which(x!=0)))
-all <- aggregate(begin ~ name, data = date_mean, FUN = length)
-# tested <- aggregate(cbind(UniqueDates = brp) ~ main,
-#                     data = list_selected, FUN = function(x) length(unique(x))) %>%
-#   left_join(all,
-#             by = join_by(main == name)) %>%
-#   left_join(noise,
-#             by = join_by(main == main)) %>%
-#   mutate(r = UniqueDates/(begin-1-noise))
-# table(tested$r == 1)
-
+# Test for selected  ---------------------
+n_min = 200
+selected_cases <- infor_all %>%
+  mutate(n_joint_min = pmin(n_joint_aft, n_joint_bef)) %>%
+  filter(n_main_bef > n_min & n_main_aft > n_min & n_joint_min > n_min) %>% 
+  group_by(main, brp) %>%
+  group_modify(~select_rows_based_on_conditions(.x)) %>%
+  ungroup()
+  
+#' noise model from data characterization
+noise_model_all = read.table(file = paste0(path_results, "order_arma.txt"), 
+                             header = FALSE, skip = 1)
+noise_model_all[,c(1:3)] <- noise_model_all[,c(1:3)] %>% 
+  fill(everything(), .direction = "down")
+#" list of segment corresponding to the noise models 
+column_classes <- c(rep("character",2), rep("numeric",3),
+                    rep("Date", 6))
+list_characteried_segments = read.table(file = paste0(path_results, 
+                                                  "List_longest_segment.txt"), 
+                                    header = TRUE, colClasses = column_classes)
+for (i in c(1:2000)) {
+  fit.i = list()
+  
+  main_st = selected_cases$main[i]
+  brp = selected_cases$brp[i]
+  nearby_st = selected_cases$nearby[i]
+  noise.flagged = selected_cases$noise[i]
+  dist_noise = selected_cases$dist_noise[i]
+  df_data = read_data_new(path_data = path_data_NGL,
+                          main_st = main_st, 
+                          nearby_st = nearby_st,
+                          name_six_diff = name_six_diff)
+  
+  if(main_st == selected_cases$main[i+1] & brp == selected_cases$brp[i+1]){
+    list_ind = c(2:6)
+  }else{
+    list_ind = c(1:6)
+  }
+  
+  six_noise_models = unlist(noise_model_all[which(
+    list_characteried_segments$main == main_st &
+      list_characteried_segments$nearby == nearby_st,
+  ),])
+  
+  for (j in list_ind) {
+    if(j == 1){
+      beg = selected_cases$main_beg_new[i]
+      end = selected_cases$main_end_new[i]
+    }else if (j == 5){
+      beg = selected_cases$nearby_beg_new[i]
+      end = selected_cases$nearby_end_new[i]
+    }else{
+      beg = max(selected_cases$nearby_beg_new[i], selected_cases$nearby_beg_new[i])
+      end = min(selected_cases$nearby_end_new[i], selected_cases$nearby_end_new[i])
+    }
+    
+    name_series = name_six_diff[j]
+    df = df_data[,c("Date", name_series)] %>% 
+      filter(Date >= beg & Date <= end) 
+    
+    # Split the data frame
+    df_before <- df[df$Date <= brp, ]
+    df_after <- df[df$Date > brp, ]
+    
+    # Count non-missing values and limit to first 1000 if necessary
+    if (sum(!is.na(df_before[[name_series]])) > 1000) {
+      df_before <- df_before %>% filter(Date > (brp - 1000))
+    }
+    
+    if (sum(!is.na(df_after[[name_series]])) > 1000) {
+      if (noise.flagged !=0 & j!=5){
+        df_after <- df_after %>%
+          filter(Date <= (brp + dist_noise + 1 + 1000)) %>%
+          filter(Date >= (brp + dist_noise))
+      }else{
+        df_after <- df_after %>% filter(Date <= (brp + 1000))
+      }
+    }
+    
+    new_df <- rbind(df_before, df_after)
+    
+    df_test <- tidyr::complete(new_df,
+                               Date = seq(min(new_df$Date),
+                                          max(new_df$Date), 
+                                          by = "day"))
+    
+    
+    ind_brp = which(df_test[["Date"]] == brp)
+    Data_mod = construct_design(data_df = df_test, 
+                                name_series = name_series,
+                                break_ind = ind_brp, 
+                                one_year = 365)
+    
+    noise_model = six_noise_models[(j*3-2):(j*3)]
+    fit_fgls = FGLS1(design.m = Data_mod,
+                     tol= 0.01, 
+                     day.list = df_test$Date, 
+                     noise.model = noise_model,
+                     length.wind0 = 60)
+    fit.i[[name_series]] = fit_fgls
+  }
+  print(i)
+  save(fit.i, file = paste0(path_results, main_st, brp, nearby_st, "fgls.RData"))
+}
 
 
 
