@@ -517,19 +517,92 @@ select_rows_based_on_conditions <- function(df) {
 }
 
 extract_FGLS_result <- function(list_selected_cases, path_FGLS){
-  list_selected_cases =  selected_cases
+  # standard output contains jumps and t-values
+  # additional results: other estimates, ARMA coefficient, MW var 
+  list_selected_cases =  selected_cases[1:2000,]
   path_FGLS = path_results
+  nr <- nrow(list_selected_cases)
   
-  for (i in c(1:nrow(list_selected_cases))) {
-    name.i = paste0(list_selected_cases$main[i], 
+  main_res <- data.frame(matrix(NA, ncol = 12, nrow = nr))
+  add_res_estimates <- data.frame(matrix(NA, ncol = 54, nrow = nr))
+  add_res_arma <- data.frame(matrix(NA, ncol = 12, nrow = nr))
+  add_res_MWvar <- data.frame(matrix(NA, ncol = 6, nrow = nr))
+  
+  for (i in c(1:nr)) {
+    name_i = paste0(list_selected_cases$main[i], 
                     list_selected_cases$brp[i], 
                     list_selected_cases$nearby[i])
-    test.i = get(load(paste0(path_results, 
-                             name.i,
+    test_i = get(load(paste0(path_results, 
+                             name_i,
                              "fgls.RData")))
-    jump.est = sapply(c(1:6), function(x) test.i[[name_six_diff[x]]]$t.table$Estimate[9])
-    t.values = sapply(c(1:6), function(x) test.i[[name_six_diff[x]]]$t.table$`t value`[9])
-    Total.res[i,] = c(jump.est, t.values)
+    jump_est = sapply(c(1:6), function(x) test_i[[name_six_diff[x]]]$t.table$Estimate[9]) %>% 
+      map_dbl(~ if(is.null(.x)) NA_real_ else .x)
+    t_values = sapply(c(1:6), function(x) test_i[[name_six_diff[x]]]$t.table$`t value`[9]) %>% 
+      map_dbl(~ if(is.null(.x)) NA_real_ else .x) 
+
+    other_est = sapply(c(1:6), function(x) test_i[[name_six_diff[x]]]$t.table$Estimate[-9])
+    if (is.null(other_est[[1]])) {
+      other_est[[1]] <- rep(NA, 9)
+    }
+    
+    arma_coef <- sapply(c(1:6), function(x) test_i[[name_six_diff[x]]]$coef.arma)
+    if (is.null(arma_coef[[1]])) {
+      arma_coef[[1]] <- rep(NA, 2)
+    }
+    
+    MWvar <- sapply(1:6, function(x) {
+      if (is.null(test_i[[name_six_diff[x]]])) {
+        return(NA)  
+      } else {
+        return(mean(test_i[[name_six_diff[x]]]$var, na.rm = TRUE))  
+      }
+    })
+
+    
+    main_res[i,] = c(jump_est, t_values)
+    add_res_estimates[i,] = unlist(other_est)
+    add_res_arma[i,] = unlist(arma_coef)   
+    add_res_MWvar[i,] = MWvar
     
   }
+                       
+  main_res %>% 
+    mutate(across(everything(), ~sprintf("%.4f", .))) %>% 
+    setNames(c(paste0("Jump_", name_six_diff), paste0("Tvalue_", name_six_diff))) %>%
+    write.table(file = paste0(path_results, "FGLS_jump_tvalue.txt"), 
+                sep = "\t", 
+                row.names = FALSE, 
+                col.names = TRUE, 
+                quote = FALSE)
+         
+  add_res_estimates %>% 
+    mutate(across(everything(), ~sprintf("%.4f", .))) %>% 
+    setNames(as.vector(outer(
+      rownames(test_i$GPS_GPS1$coefficients)[-9], 
+      name_six_diff, paste, sep = "-"))) %>% 
+    write.table(file = paste0(path_results, "FGLS_other_estimates.txt"), 
+              sep="\t", 
+              col.names = TRUE,
+              row.names = FALSE, 
+              quote = FALSE)
+  
+  add_res_arma %>% 
+    mutate(across(everything(), ~sprintf("%.4f", .))) %>% 
+    setNames( paste(rep(c("Phi", "Theta"),6), 
+                    rep(name_six_diff,each =2), sep = "-")) %>% 
+  write.table(file = paste0(path_results, "FGLS_arma_coef.txt"), 
+              sep="\t", 
+              col.names = TRUE,
+              row.names = FALSE, 
+              quote = FALSE)
+  
+  add_res_MWvar  %>% 
+    mutate(across(everything(), ~sprintf("%.4f", .))) %>% 
+    setNames(name_six_diff) %>% 
+  write.table(file = paste0(path_results, "FGLS_MWvar.txt"), 
+              sep="\t", 
+              col.names = TRUE,
+              row.names = FALSE, 
+              quote = FALSE)
+  
 }
