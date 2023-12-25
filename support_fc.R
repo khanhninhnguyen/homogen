@@ -515,3 +515,21 @@ select_rows_based_on_conditions <- function(df) {
   
   return(df_sorted)
 }
+
+extract_FGLS_result <- function(list_selected_cases, path_FGLS){
+  list_selected_cases =  selected_cases
+  path_FGLS = path_results
+  
+  for (i in c(1:nrow(list_selected_cases))) {
+    name.i = paste0(list_selected_cases$main[i], 
+                    list_selected_cases$brp[i], 
+                    list_selected_cases$nearby[i])
+    test.i = get(load(paste0(path_results, 
+                             name.i,
+                             "fgls.RData")))
+    jump.est = sapply(c(1:6), function(x) test.i[[name_six_diff[x]]]$t.table$Estimate[9])
+    t.values = sapply(c(1:6), function(x) test.i[[name_six_diff[x]]]$t.table$`t value`[9])
+    Total.res[i,] = c(jump.est, t.values)
+    
+  }
+}

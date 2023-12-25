@@ -150,6 +150,9 @@ selected_cases <- infor_all %>%
   group_modify(~select_rows_based_on_conditions(.x)) %>%
   ungroup()
   
+write.table(selected_cases, 
+            file = paste0(path_results,"list_selected_nmin200_10nearby.txt"),
+            row.names = FALSE, quote = FALSE)
 #' noise model from data characterization
 noise_model_all = read.table(file = paste0(path_results, "order_arma.txt"), 
                              header = FALSE, skip = 1)
