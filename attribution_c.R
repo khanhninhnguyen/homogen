@@ -164,7 +164,7 @@ column_classes <- c(rep("character",2), rep("numeric",3),
 list_characteried_segments = read.table(file = paste0(path_results, 
                                                   "List_longest_segment.txt"), 
                                     header = TRUE, colClasses = column_classes)
-for (i in c(2001:4000)) {
+for (i in c(13001:14000)) {
   fit.i = list()
   
   main_st = selected_cases$main[i]
@@ -176,9 +176,13 @@ for (i in c(2001:4000)) {
                           main_st = main_st, 
                           nearby_st = nearby_st,
                           name_six_diff = name_six_diff)
-  
-  if(main_st == selected_cases$main[i+1] & brp == selected_cases$brp[i+1]){
-    list_ind = c(2:6)
+  imax = nrow(selected_cases)
+  if(i < imax){
+    if(main_st == selected_cases$main[i+1] & brp == selected_cases$brp[i+1]){
+      list_ind = c(2:6)
+    }else{
+      list_ind = c(1:6)
+    }
   }else{
     list_ind = c(1:6)
   }

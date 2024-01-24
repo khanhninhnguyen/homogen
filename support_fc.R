@@ -519,7 +519,7 @@ select_rows_based_on_conditions <- function(df) {
 extract_FGLS_result <- function(list_selected_cases, path_FGLS){
   # standard output contains jumps and t-values
   # additional results: other estimates, ARMA coefficient, MW var 
-  list_selected_cases =  selected_cases[1:2000,]
+  list_selected_cases = selected_cases
   path_FGLS = path_results
   nr <- nrow(list_selected_cases)
   
