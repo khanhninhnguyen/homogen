@@ -16,8 +16,9 @@ duplicated3 <- function(X, Y){
   all.keep = sapply(c(1:length(ind.dup)), function(z){
     ind.dupli = which(auxi == auxi[ind.dup[z]])
     keep.ind = ind.dupli[which(Y[ind.dupli,1] !=0)]
-    return( keep.ind)
+    return(keep.ind)
   })
+  
   return(all.keep)
 }
 # Separate data for each series 
