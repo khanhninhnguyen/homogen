@@ -3,7 +3,7 @@
 duplicated2 <- function(x){
   auxi <- do.call("paste",c(x,sep="_"))
   y <- table(auxi)
-  y <- y>1
+  y <- y > 1
   res <- y[match(auxi,names(y))]
   dimnames(res) <- NULL
   return(res)

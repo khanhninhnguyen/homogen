@@ -178,7 +178,7 @@ for (b in 1:B){
   # Boot() for the same number of configuration
   DataLearn <- c()
   DataTest <- c()
-  DataLearn <- Boot("Learn",Z.trunc.final.code,NbSim) ####BOOT FC HAS PB
+  DataLearn <- Boot("Learn",Z.trunc.final.code,NbSim)
   DataTest <- Boot("Test",Z.trunc.final.code,NbSim)
   saveRDS(DataLearn, file = paste0(file_path_Results,"DataLearn_",b,significance.level, offset, GE, number.pop,".rds"))
   saveRDS(DataTest, file = paste0(file_path_Results,"DataTest_",b,significance.level, offset, GE, number.pop,".rds"))
