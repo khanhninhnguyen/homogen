@@ -142,7 +142,7 @@ for (b in 1:B){
   existing.pop.Test <- 0
   
   while ((existing.pop.Learn!=15) & (existing.pop.Test !=15)){
-    trainIndex<-createDataPartition(1:nrow(Data.GGp) , p=0.8, list = FALSE)
+    trainIndex <- createDataPartition(1:nrow(Data.GGp) , p=0.8, list = FALSE)
     
     Data.GGp.Learn <- Data.GGp %>% slice(trainIndex)
     Data.GGp.Test <- Data.GGp %>% slice(-trainIndex)
