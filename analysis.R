@@ -226,3 +226,39 @@ df %>%
 #' 
 #' 
 #' 
+#' 
+#' test results
+#' 
+
+# test results ------------------------------------------------------------
+
+path_restest <- paste0(path_results,"attribution/predictive_rule/")
+List_main = read.table(file = paste0(path_restest,"list_selected_nmin200_10nearby.txt"), 
+                       header = TRUE, 
+                       stringsAsFactors = FALSE) 
+
+name.version ="FGLS_jump_tvalue.txt"
+name.results <- paste0(path_restest, name.version) # name of test result file
+Data_Res_Test0 <- read.table(name.results,
+                             header = TRUE,
+                             stringsAsFactors = FALSE) 
+
+Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby", "dd", "n_joint_min")],
+                       Data_Res_Test0[,1:6]) %>%
+  mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
+
+suspect = Data_Res_Test %>%
+  filter(abs(Jump_GPS_ERA1)>3)
+
+i = 7585
+name_i = paste0(Data_Res_Test$main[i], 
+                Data_Res_Test$brp[i], 
+                Data_Res_Test$nearby[i])
+
+
+
+
+
+
+
+

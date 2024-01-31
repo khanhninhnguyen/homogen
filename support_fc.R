@@ -606,3 +606,30 @@ extract_FGLS_result <- function(list_selected_cases, path_FGLS){
               quote = FALSE)
   
 }
+
+
+#' plot time series 
+
+
+
+test_i = get(load(paste0(path_results, 
+                         name_i,
+                         "fgls.RData")))
+plot_list <- list()
+
+for (i in seq_along(test_i)) {
+  # Access the design.matrix dataframe
+  df <- test_i[[i]]$design.matrix
+  
+  ylab = names(test_i)[i]
+  # Create a plot for the current design.matrix
+  p <- ggplot(df, aes(x = date, y = signal)) +
+    geom_line() + # or geom_point() depending on your data
+    labs(title = paste("Plot", i), x = "Date", y = ylab) +
+    theme_minimal()
+  
+  # Add the plot to the list
+  plot_list[[i]] <- p
+}
+p
+
