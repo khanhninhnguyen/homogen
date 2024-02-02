@@ -610,28 +610,39 @@ extract_FGLS_result <- function(list_selected_cases, path_FGLS){
 
 #' plot time series 
 
-
-
-test_i = get(load(paste0(path_results, 
-                         name_i,
-                         "fgls.RData")))
-plot_list <- list()
-
-for (i in seq_along(test_i)) {
-  # Access the design.matrix dataframe
-  df <- test_i[[i]]$design.matrix
+plot_test_res <- function(main_st, brp, nearby_st){
+  name_i = paste0(main_st, brp, nearby_st)
+  test_i = get(load(paste0(path_results, 
+                           name_i,
+                           "fgls.RData")))
   
-  ylab = names(test_i)[i]
-  # Create a plot for the current design.matrix
-  p <- ggplot(df, aes(x = date, y = signal)) +
-    geom_line() + # or geom_point() depending on your data
-    labs(title = paste("Plot", i), x = "Date", y = ylab) +
-    ylim(-10,10)+
-    theme_minimal()
+  plot_list <- list()
   
-  # Add the plot to the list
-  plot_list[[i]] <- p
+  for (i in seq_along(test_i)) {
+    # Access the design.matrix dataframe
+    df <- test_i[[i]]$design.matrix
+    
+    ylab = names(test_i)[i]
+    # Create a plot for the current design.matrix
+    p <- ggplot(df, aes(x = date, y = signal)) +
+      geom_line() + # or geom_point() depending on your data
+      labs(title = paste("Plot", i), x = "Date", y = ylab) +
+      ylim(-10,10)+
+      theme_minimal()
+    
+    # Add the plot to the list
+    plot_list[[i]] <- p
+  }
+  
+  png(paste0(path_results,"combined_plots", name_i, ".png"), width = 3000, height = 3000, res = 300)
+  # Draw the plot
+  do.call("grid.arrange", c(plot_list, ncol = 2))
+  # Close the device
+  dev.off()
 }
+
+
+
 
 #' plot full timeseries
 
