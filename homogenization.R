@@ -7,7 +7,7 @@ library(purrr)
 library(ggplot2)
 library(tidyverse)
 library(nlme)
-
+library(tidyr)
 ### uncomment to run segmentation 
 
 ## set path: modify the main path, data path and create:

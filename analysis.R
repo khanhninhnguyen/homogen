@@ -230,8 +230,10 @@ df %>%
 #' test results
 #' 
 
-# test results ------------------------------------------------------------
 
+
+# test results ------------------------------------------------------------
+library(gridExtra)
 path_restest <- paste0(path_results,"attribution/predictive_rule/")
 List_main = read.table(file = paste0(path_restest,"list_selected_nmin200_10nearby.txt"), 
                        header = TRUE, 
@@ -243,22 +245,64 @@ Data_Res_Test0 <- read.table(name.results,
                              header = TRUE,
                              stringsAsFactors = FALSE) 
 
-Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby", "dd", "n_joint_min")],
+Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
                        Data_Res_Test0[,1:6]) %>%
   mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
 
 suspect = Data_Res_Test %>%
   filter(abs(Jump_GPS_ERA1)>3)
 
-i = 7585
+# distribution 
+
+# Transform the dataset to a long format for easier plotting with ggplot2
+# df_plot = Data_Res_Test[which(List_main$dd>50),]
+Data_Res_Test_fillNA <- Data_Res_Test %>%
+  arrange(main, brp) %>%
+  group_by(main, brp) %>%
+  mutate(Jump_GPS_ERA = if_else(is.na(Jump_GPS_ERA), 
+                                  lag(Jump_GPS_ERA, order_by = brp, default = NA), 
+                                Jump_GPS_ERA)) %>%
+  fill(Jump_GPS_ERA, .direction = "downup") %>%
+  ungroup()
+
+df_plot = Data_Res_Test_fillNA %>% 
+  filter(Jump_GPS_ERA<0)
+
+# df_long <- pivot_longer(df_plot, cols = starts_with("Tvalue"), names_to = "Variable", values_to = "Value")
+df_long <- pivot_longer(df_plot, cols = starts_with("Jump"), names_to = "Variable", values_to = "Value")
+
+# Create the plots
+ggplot(df_long, aes(x = Value)) +
+  geom_histogram(aes(y = ..density..), binwidth = 0.01, fill = "blue", color = "black") + # Adjust binwidth as needed
+  geom_density(color = "red", fill = "red", alpha = 0.3) +
+  facet_wrap(~ Variable, scales = "free", ncol = 3) +
+  labs(title = "Distribution of Jumps", x = "Value", y = "Density") +
+  # labs(title = "Distribution of T-value Columns", x = "Value", y = "Density") +
+  theme_minimal() +
+  xlim(-1,1)
+# plot the suspected cases
+i = 1096
 name_i = paste0(Data_Res_Test$main[i], 
                 Data_Res_Test$brp[i], 
                 Data_Res_Test$nearby[i])
 
+png(paste0(path_results,"combined_plots", name_i, ".png"), width = 3000, height = 3000, res = 300)
+# Draw the plot
+do.call("grid.arrange", c(plot_list, ncol = 2))
+# Close the device
+dev.off()
 
 
+main_st = Data_Res_Test$main[i]
+nearby_st = Data_Res_Test$nearby[i]
+df_data = read_data_new(path_data = path_data_NGL,
+                        main_st = main_st, 
+                        nearby_st = nearby_st,
+                        name_six_diff = name_six_diff)
 
-
-
-
+png(paste0(path_results,"All_plots_full_", name_i, ".png"), width = 3000, height = 3000, res = 300)
+# Draw the plot
+do.call("grid.arrange", c(plot_list, ncol = 2))
+# Close the device
+dev.off()
 

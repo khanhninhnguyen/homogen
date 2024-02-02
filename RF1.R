@@ -46,7 +46,7 @@ Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
                        Data_Res_Test0[,7:12]) %>%
   mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
 
-predictiver_rule (significance_level, B=1, 
+a = predictiver_rule (significance_level, B=1, 
                   offset, 
                   GE,
                   number_pop,
@@ -57,4 +57,10 @@ predictiver_rule (significance_level, B=1,
                   list_name_test,
                   Data_Res_Test, 
                   path_restest)
+
+
+
+
+
+
 
