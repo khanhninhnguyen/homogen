@@ -617,7 +617,7 @@ plot_test_res <- function(main_st, brp, nearby_st){
                            "fgls.RData")))
   
   plot_list <- list()
-  
+  # read the full data and limit date by the test result --> include G-E
   for (i in seq_along(test_i)) {
     # Access the design.matrix dataframe
     df <- test_i[[i]]$design.matrix
