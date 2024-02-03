@@ -616,11 +616,21 @@ plot_test_res <- function(main_st, brp, nearby_st){
                            name_i,
                            "fgls.RData")))
   
+  begin_day = test_i$GPS1_ERA1$design.matrix$date[1]
+  end_day = tail(test_i$GPS1_ERA1$design.matrix$date, 1)
+  
   plot_list <- list()
+  
+  df_data = read_data_new(path_data = path_data_NGL,
+                          main_st = main_st, 
+                          nearby_st = nearby_st,
+                          name_six_diff = name_six_diff)
+  
+  
   # read the full data and limit date by the test result --> include G-E
   for (i in seq_along(test_i)) {
-    # Access the design.matrix dataframe
-    df <- test_i[[i]]$design.matrix
+
+      df <- test_i[[i]]$design.matrix
     
     ylab = names(test_i)[i]
     # Create a plot for the current design.matrix
