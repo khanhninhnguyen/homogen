@@ -281,18 +281,26 @@ ggplot(df_long, aes(x = Value)) +
   theme_minimal() +
   xlim(-1,1)
 # plot the suspected cases
-i = 1096
-main_st = Data_Res_Test$main[i]
-brp = Data_Res_Test$brp[i]
-nearby_st = Data_Res_Test$nearby[i]
-name_i = paste0(Data_Res_Test$main[i], 
-                Data_Res_Test$brp[i], 
-                Data_Res_Test$nearby[i])
+case_ind = 1096
+main_st = Data_Res_Test$main[case_ind]
+brp_test = Data_Res_Test$brp[case_ind]
+nearby_st = Data_Res_Test$nearby[case_ind]
+name_i = paste0(Data_Res_Test$main[case_ind], 
+                Data_Res_Test$brp[case_ind], 
+                Data_Res_Test$nearby[case_ind])
 
-main_beg = List_main$main_beg_new[i]
-main_end = List_main$main_end_new[i]
-nearby_beg = List_main$nearby_beg_new[i]
-nearby_end = List_main$nearby_end_new[i]
+main_beg = List_main$main_beg_new[case_ind]
+main_end = List_main$main_end_new[case_ind]
+nearby_beg = List_main$nearby_beg_new[case_ind]
+nearby_end = List_main$nearby_end_new[case_ind]
+test_res = Data_Res_Test_fillNA[case_ind,]
+name_nearby_full = Data_Res_Test %>% 
+  filter(main == main_st,
+         brp == brp_test) %>%
+  select(nearby)  %>%
+  pull %>%
+  tail(n = 1)
+
 
 png(paste0(path_results,"combined_plots", name_i, ".png"), width = 3000, height = 3000, res = 300)
 # Draw the plot

@@ -611,37 +611,57 @@ extract_FGLS_result <- function(list_selected_cases, path_FGLS){
 #' plot time series 
 
 plot_test_res <- function(main_st, brp, nearby_st, 
-                          main_beg, main_end, nearby_beg, nearby_end){
+                          main_beg, main_end, nearby_beg, nearby_end,
+                          test_info, name_nearby_full,
+                          name_six_diff,
+                          path_data_NGL){
   
-  name_case = paste0(main_st, brp, nearby_st)
   test_case = get(load(paste0(path_results, 
                            name_case,
                            "fgls.RData")))
+  test_main = get(load(paste0(path_results, 
+                              paste0(main_st, brp, name_nearby_full),
+                              "fgls.RData")))
   
   df_data = read_data_new(path_data = path_data_NGL,
                           main_st = main_st, 
                           nearby_st = nearby_st,
                           name_six_diff = name_six_diff)
   
-  df_long <- pivot_longer(df_data, cols = -1, names_to = "Variable", values_to = "Value")
+  six_vars = names(df_data)[!names(df_data) %in% c("Date")]
+  five_vars <- six_vars[!six_vars %in% c("GPS_ERA")]
+  
+  mean_vec = rep(NA, 12)
+  mean_vec[c(1:2)] <- test_main$GPS_ERA$coefficients[c("left", "right"), ]
+  mean_vec[3:12] <- unlist(lapply(five_vars , function(x) test_case[[x]]$coefficients[c("left", "right"),]))
+  
+  df_data = df_data %>% 
+    mutate(GPS_ERA = if_else(Date < main_beg | Date > main_end, NA_real_, GPS_ERA)) %>% 
+    mutate(across(all_of(five_vars),
+                  ~if_else(Date < nearby_beg | Date > nearby_end, NA_real_, .)))
+  
+  
+  df_data <- df_data[rowSums(is.na(df_data[, six_vars])) < length(six_vars), ] %>%
+    complete(Date = seq(min(Date), max(Date), by = "day"))
+  
+  for (i in c(1:6)) {
+    ind_brp = which(df_data$Date == brp)
+    df_data[1:ind_brp, paste0("mean.", six_vars[i])] <- mean_vec[2*i-1]
+    df_data[ind_brp:(nrow(df_data)), paste0("mean.", six_vars[i])] <- (mean_vec[2*i-1] + mean_vec[2*i])
+    ind_na = which(is.na(df_data[six_vars[i]]))
+    df_data[ind_na, paste0("mean.", six_vars[i])] <- NA
+  }
+  
+  df_long <- pivot_longer(df_data, cols = -1, names_to = "Variable", values_to = "Value") 
   
   p <- ggplot(df_long, aes(x = Date, y = Value)) +
-    geom_point() + # Using points for demonstration; adjust as necessary
-    geom_line() + # Optional: Add a line to connect points; remove if not needed
-    facet_wrap(~ Variable, scales = "free_y", ncol = 3) + # Adjust scales and ncol as needed
-    labs(title = "Variable Measurements as a Function of the First Column", x = "First Column", y = "Measurement") +
-    theme_minimal()
+    theme_bw() + 
+    geom_line(col = "lightblue", lwd = 0.5) + # Using points for demonstration; adjust as necessary
+    facet_wrap(~ Variable, ncol = 3) + # Adjust scales and ncol as needed +
+    geom_vline(xintercept = brp, lty = 3) + 
+    labs( x = "", y = "IWV difference") 
   
-  # Create the plots
-  p <- ggplot(df_long, aes(x = Value)) +
-    geom_line(col = "gray", lwd = 0.5) + 
-    facet_wrap(~ Variable, scales = "free", ncol = 3) +
-    labs(title = "Distribution of Jumps", x = "Value", y = "Density") +
-    # labs(title = "Distribution of T-value Columns", x = "Value", y = "Density") +
-    theme_minimal() +
-    xlim(-1,1)
-  
-  ggsave(paste0(path_results, name_case, ".jpg"),
+  ggsave(paste0(path_main, "sendOlivier/", name_case, ".jpg"),
          plot = p,
          width = 10,
          height = 8)
