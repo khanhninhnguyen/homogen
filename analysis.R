@@ -282,9 +282,17 @@ ggplot(df_long, aes(x = Value)) +
   xlim(-1,1)
 # plot the suspected cases
 i = 1096
+main_st = Data_Res_Test$main[i]
+brp = Data_Res_Test$brp[i]
+nearby_st = Data_Res_Test$nearby[i]
 name_i = paste0(Data_Res_Test$main[i], 
                 Data_Res_Test$brp[i], 
                 Data_Res_Test$nearby[i])
+
+main_beg = List_main$main_beg_new[i]
+main_end = List_main$main_end_new[i]
+nearby_beg = List_main$nearby_beg_new[i]
+nearby_end = List_main$nearby_end_new[i]
 
 png(paste0(path_results,"combined_plots", name_i, ".png"), width = 3000, height = 3000, res = 300)
 # Draw the plot
