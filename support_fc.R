@@ -612,7 +612,7 @@ extract_FGLS_result <- function(list_selected_cases, path_FGLS){
 
 plot_test_res <- function(main_st, brp, nearby_st, 
                           main_beg, main_end, nearby_beg, nearby_end,
-                          test_info, name_nearby_full,
+                          name_nearby_full,
                           name_six_diff,
                           path_data_NGL){
   
@@ -652,19 +652,68 @@ plot_test_res <- function(main_st, brp, nearby_st,
     df_data[ind_na, paste0("mean.", six_vars[i])] <- NA
   }
   
-  df_long <- pivot_longer(df_data, cols = -1, names_to = "Variable", values_to = "Value") 
+  df_long <- pivot_longer(df_data,
+                          cols = -Date,
+                          names_to = "Variable", 
+                          values_to = "Value") %>% 
+    mutate(Type = ifelse(startsWith(Variable, "mean"), "Mean",  "IWVdiff")) %>% 
+    mutate(Variable = gsub("mean\\.", "", Variable))
+
+  # Custom labeller function
+  my_labeller <- function(test_name) {
+    if(test_name == "GPS_ERA"){
+      Jump = test_main$GPS_ERA$coefficients[9]
+      Tvalue = test_main$GPS_ERA$t.table$`t value`[9]
+    }else{
+      Jump = test_case[[test_name]]$coefficients[9]
+      Tvalue = test_case[[test_name]]$t.table$`t value`[9]
+      }
+    return(paste0(test_name, 
+                 " : Jump = ", sprintf("%.3f", Jump),
+                 ", T-value = ", sprintf("%.3f", Tvalue),
+                 ", Std. Err = ", sprintf("%.3f", Jump/Tvalue)))
+  }
   
-  p <- ggplot(df_long, aes(x = Date, y = Value)) +
-    theme_bw() + 
-    geom_line(col = "lightblue", lwd = 0.5) + # Using points for demonstration; adjust as necessary
-    facet_wrap(~ Variable, ncol = 3) + # Adjust scales and ncol as needed +
-    geom_vline(xintercept = brp, lty = 3) + 
-    labs( x = "", y = "IWV difference") 
+  df_long$FacetVar = sapply(df_long$Variable, my_labeller)
+
+  FacetVar = as.character(unique(df_long$FacetVar))
+  measurement_names <- sapply(strsplit(FacetVar, " :"), `[`, 1)
+  order_index <- match(c("GPS_ERA", "ERA_ERA1", "GPS_ERA1", "GPS1_ERA1", "GPS_GPS1", "GPS1_ERA"), 
+                       measurement_names)
+  ordered_measurements <- FacetVar[order_index]
   
-  ggsave(paste0(path_main, "sendOlivier/", name_case, ".jpg"),
-         plot = p,
-         width = 10,
-         height = 8)
+  df_long$FacetVar <- factor(df_long$FacetVar, 
+                             levels = ordered_measurements)
+
+  p <- ggplot(df_long, aes(x = Date, y = Value, color = Type)) + 
+    theme_minimal() +
+    geom_line(lwd = 0.2) +
+    facet_wrap(~FacetVar, scales = "free_y", ncol = 2) +  # Using custom labeller
+    geom_vline(xintercept = brp, lty = 3, lwd = 0.2) + 
+    ylim(min(df_long$Value, na.rm = TRUE), max(df_long$Value, na.rm = TRUE)) + 
+    scale_color_manual(values = c("IWVdiff" = "lightblue", "Mean" = "red")) +
+    ylab(expression(paste("IWV Difference", (kg.m^-2)))) + 
+    xlab("") + 
+    theme(axis.text.x = element_text(size = 4.5), 
+          axis.text.y = element_text(size = 5),
+          legend.text = element_text(size=4),
+          axis.title = element_text(size = 5), 
+          legend.key.size = unit(0.2, "cm"), 
+          plot.tag = element_text(size = 6) ,
+          plot.subtitle = element_text(size = 6),
+          legend.title = element_blank(), 
+          legend.box.spacing = unit(0, "pt"),
+          strip.text = element_text(size = 4), 
+          panel.grid.major = element_line(size = 0.1, color = "grey80"),  # Default might be around 0.5
+          panel.grid.minor = element_line(size = 0.05, color = "grey85"), # Default might be around 0.25
+          plot.margin = rep(unit(0,"null"),4))
+    
+  jpeg(paste0(path_results,"figure/", main_st, brp, nearby_st ,".jpeg"),
+       width = 3000, height = 1800, res = 600) # change name
+  
+  print(p)
+  # print(ml1)
+  dev.off() 
   
 }
 

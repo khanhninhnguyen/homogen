@@ -255,7 +255,7 @@ for(suffix in name_six_diff) {
 }
 
 Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
-                       Data_Res_Test0[,13:18]) %>%
+                       Data_Res_Test0[,1:6]) %>%
   mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
 
 
@@ -270,10 +270,10 @@ suspect_info = List_main[which(abs(Data_Res_Test0$Jump_GPS_GPS1)<0.01),]
 Data_Res_Test_fillNA <- Data_Res_Test %>%
   arrange(main, brp) %>%
   group_by(main, brp) %>%
-  mutate(Std.err_GPS_ERA = if_else(is.na(Std.err_GPS_ERA), 
-                                  lag(Std.err_GPS_ERA, order_by = brp, default = NA), 
-                                  Std.err_GPS_ERA)) %>%
-  fill(Std.err_GPS_ERA, .direction = "downup") %>%
+  mutate(Std.err_GPS_ERA = if_else(is.na(Jump_GPS_ERA), 
+                                  lag(Jump_GPS_ERA, order_by = brp, default = NA), 
+                                  Jump_GPS_ERA)) %>%
+  fill(Jump_GPS_ERA, .direction = "downup") %>%
   ungroup()
 
 df_plot = Data_Res_Test %>% 
@@ -294,6 +294,7 @@ ggplot(df_long, aes(x = Value)) +
 case_ind = 1096
 main_st = Data_Res_Test$main[case_ind]
 brp_test = Data_Res_Test$brp[case_ind]
+brp = brp_test
 nearby_st = Data_Res_Test$nearby[case_ind]
 name_i = paste0(Data_Res_Test$main[case_ind], 
                 Data_Res_Test$brp[case_ind], 
@@ -304,32 +305,33 @@ main_end = List_main$main_end_new[case_ind]
 nearby_beg = List_main$nearby_beg_new[case_ind]
 nearby_end = List_main$nearby_end_new[case_ind]
 test_res = Data_Res_Test_fillNA[case_ind,]
-name_nearby_full = Data_Res_Test %>% 
-  filter(main == main_st,
-         brp == brp_test) %>%
-  select(nearby)  %>%
-  pull %>%
-  tail(n = 1)
 
+suspect1 = which(abs(Data_Res_Test_fillNA$Jump_GPS_ERA)>3)
+suspect2 = which(abs(Data_Res_Test_fillNA$Jump_GPS_GPS1)>3)
+suspect3 = which(abs(Data_Res_Test_fillNA$Jump_GPS_ERA1)>3)
 
-png(paste0(path_results,"combined_plots", name_i, ".png"), width = 3000, height = 3000, res = 300)
-# Draw the plot
-do.call("grid.arrange", c(plot_list, ncol = 2))
-# Close the device
-dev.off()
+suspect_case = unique(suspect1, suspect2, suspect3)
+for (i in suspect_case) {
+  case_ind = i
+  main_st = Data_Res_Test$main[case_ind] 
+  brp_test = Data_Res_Test$brp[case_ind]
+  name_nearby_full = Data_Res_Test %>% 
+    filter(main == main_st,
+           brp == brp_test) %>%
+    select(nearby)  %>%
+    pull %>%
+    tail(n = 1)
+  
+  plot_test_res(main_st = Data_Res_Test$main[case_ind] ,
+                brp = Data_Res_Test$brp[case_ind], 
+                nearby_st = Data_Res_Test$nearby[case_ind],  
+                main_beg = List_main$main_beg_new[case_ind],
+                main_end = List_main$main_end_new[case_ind], 
+                nearby_beg = List_main$nearby_beg_new[case_ind], 
+                nearby_end = List_main$nearby_end_new[case_ind],
+                name_nearby_full = name_nearby_full,
+                name_six_diff,
+                path_data_NGL)
+}
 
-
-
-main_st = Data_Res_Test$main[i]
-nearby_st = Data_Res_Test$nearby[i]
-df_data = read_data_new(path_data = path_data_NGL,
-                        main_st = main_st, 
-                        nearby_st = nearby_st,
-                        name_six_diff = name_six_diff)
-
-png(paste0(path_results,"All_plots_full_", name_i, ".png"), width = 3000, height = 3000, res = 300)
-# Draw the plot
-do.call("grid.arrange", c(plot_list, ncol = 2))
-# Close the device
-dev.off()
 
