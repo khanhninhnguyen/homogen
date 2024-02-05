@@ -238,6 +238,7 @@ path_restest <- paste0(path_results,"attribution/predictive_rule/")
 List_main = read.table(file = paste0(path_restest,"list_selected_nmin200_10nearby.txt"), 
                        header = TRUE, 
                        stringsAsFactors = FALSE) 
+name_six_diff = c("GPS_ERA", "GPS_GPS1", "GPS_ERA1", "ERA_ERA1", "GPS1_ERA1", "GPS1_ERA")
 
 name.version ="FGLS_jump_tvalue.txt"
 name.results <- paste0(path_restest, name.version) # name of test result file
@@ -245,13 +246,23 @@ Data_Res_Test0 <- read.table(name.results,
                              header = TRUE,
                              stringsAsFactors = FALSE) 
 
+for(suffix in name_six_diff) {
+  jump_col <- paste0("Jump_", suffix)
+  tvalue_col <- paste0("Tvalue_", suffix)
+  
+  # Create new ratio column
+  Data_Res_Test0[[paste0("Std.err_", suffix)]] <- Data_Res_Test0[[jump_col]] / Data_Res_Test0[[tvalue_col]]
+}
+
 Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
-                       Data_Res_Test0[,1:6]) %>%
+                       Data_Res_Test0[,13:18]) %>%
   mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
 
-suspect = Data_Res_Test %>%
-  filter(abs(Jump_GPS_ERA1)>3)
 
+
+suspect = Data_Res_Test0 %>%
+  filter(abs(Jump_GPS_GPS1)<0.01)
+suspect_info = List_main[which(abs(Data_Res_Test0$Jump_GPS_GPS1)<0.01),]
 # distribution 
 
 # Transform the dataset to a long format for easier plotting with ggplot2
@@ -259,27 +270,26 @@ suspect = Data_Res_Test %>%
 Data_Res_Test_fillNA <- Data_Res_Test %>%
   arrange(main, brp) %>%
   group_by(main, brp) %>%
-  mutate(Jump_GPS_ERA = if_else(is.na(Jump_GPS_ERA), 
-                                  lag(Jump_GPS_ERA, order_by = brp, default = NA), 
-                                Jump_GPS_ERA)) %>%
-  fill(Jump_GPS_ERA, .direction = "downup") %>%
+  mutate(Std.err_GPS_ERA = if_else(is.na(Std.err_GPS_ERA), 
+                                  lag(Std.err_GPS_ERA, order_by = brp, default = NA), 
+                                  Std.err_GPS_ERA)) %>%
+  fill(Std.err_GPS_ERA, .direction = "downup") %>%
   ungroup()
 
-df_plot = Data_Res_Test_fillNA %>% 
+df_plot = Data_Res_Test %>% 
   filter(Jump_GPS_ERA<0)
 
 # df_long <- pivot_longer(df_plot, cols = starts_with("Tvalue"), names_to = "Variable", values_to = "Value")
-df_long <- pivot_longer(df_plot, cols = starts_with("Jump"), names_to = "Variable", values_to = "Value")
+df_long <- pivot_longer(df_plot, cols = starts_with("Std.err"), names_to = "Variable", values_to = "Value")
 
 # Create the plots
 ggplot(df_long, aes(x = Value)) +
-  geom_histogram(aes(y = ..density..), binwidth = 0.01, fill = "blue", color = "black") + # Adjust binwidth as needed
-  geom_density(color = "red", fill = "red", alpha = 0.3) +
+  geom_histogram(binwidth = 0.005, fill = "blue", color = "black") + # Adjust binwidth as needed
   facet_wrap(~ Variable, scales = "free", ncol = 3) +
-  labs(title = "Distribution of Jumps", x = "Value", y = "Density") +
+  labs(title = "Distribution of Std.err ( d>25 km)", x = "Value", y = "Frequency") +
   # labs(title = "Distribution of T-value Columns", x = "Value", y = "Density") +
   theme_minimal() +
-  xlim(-1,1)
+  xlim(0,0.7)
 # plot the suspected cases
 case_ind = 1096
 main_st = Data_Res_Test$main[case_ind]

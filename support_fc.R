@@ -617,8 +617,8 @@ plot_test_res <- function(main_st, brp, nearby_st,
                           path_data_NGL){
   
   test_case = get(load(paste0(path_results, 
-                           name_case,
-                           "fgls.RData")))
+                              paste0(main_st, brp, nearby_st),
+                              "fgls.RData")))
   test_main = get(load(paste0(path_results, 
                               paste0(main_st, brp, name_nearby_full),
                               "fgls.RData")))
