@@ -718,27 +718,105 @@ plot_test_res <- function(main_st, brp, nearby_st,
 }
 
 
-
-
-#' plot full timeseries
-
-plot_list <- list()
-
-for (i in c(1:6)) {
-  # Access the design.matrix dataframe
-  df <- df_data[, c("Date", name_six_diff[i])]
-  colnames(df)[2] <- "Signal"
+plot_full_series <- function(main_st, nearby_st, 
+                             path_data_NGL, 
+                             date_mean,
+                             name_six_diff){
   
-  ylab = name_six_diff[i]
+  main_segments = date_mean %>% filter(name == main_st)
+  nearby_segments = date_mean %>% filter(name == nearby_st)
   
-  ymax = max(df_data[,-1], na.rm = TRUE)
-  ymin = min(df_data[,-1], na.rm = TRUE)
-  # Create a plot for the current design.matrix
-  p <- ggplot(df, aes(x = Date, y = Signal)) + theme_minimal() + 
-    geom_line(color = "gray", lwd = 0.5) + # or geom_point() depending on your data
-    labs(title = paste("Plot", i), x = "Date", y = ylab) +
-    ylim(ymin, ymax)
+  df_data = read_data_new(path_data = path_data_NGL,
+                          main_st = main_st, 
+                          nearby_st = nearby_st,
+                          name_six_diff = name_six_diff) %>%
+    tidyr::complete(Date = seq(min(Date), max(Date), by = "day")) %>%
+    mutate(Mean_GPS_ERA = main_segments$mean[1],
+           Mean_GPS1_ERA1 = nearby_segments$mean[1])
   
-  # Add the plot to the list
-  plot_list[[i]] <- p
+  if(nrow(main_segments) >1){
+    for (j in 2:nrow(main_segments)) {
+      ind_mean = which(df_data$Date <= main_segments$end[j] &
+                         df_data$Date >= main_segments$begin[j])
+      df_data$Mean_GPS_ERA[ind_mean] <- main_segments$mean[j] 
+      df_data$Mean_GPS_ERA[which(is.na(df_data$GPS_ERA))] <- NA
+    }
+  }
+  
+  if(nrow(nearby_segments)>1){
+    for (k in 2:nrow(main_segments)) {
+      ind_mean = which(df_data$Date <= nearby_segments$end[k] &
+                         df_data$Date >= nearby_segments$begin[k])
+      df_data$Mean_GPS1_ERA1[ind_mean] <- nearby_segments$mean[k] 
+      df_data$Mean_GPS1_ERA1[which(is.na(df_data$GPS1_ERA1))] <- NA
+    }
+  }
+  
+  plot_list <- list()
+  
+  for (i in c(1:6)) {
+    # Access the design.matrix dataframe
+    df <- df_data[, c("Date", name_six_diff[i])]
+    colnames(df)[2] <- "Signal"
+    
+    ylab = name_six_diff[i]
+    
+    
+    ymax = max(df_data[,-1], na.rm = TRUE)
+    ymin = min(df_data[,-1], na.rm = TRUE)
+  
+    if (name_six_diff[i] %in% c("GPS_ERA", "GPS1_ERA1")){
+      df <- df %>% mutate(Mean = df_data[[paste0("Mean_", name_six_diff[i])]])
+      df_long <- pivot_longer(df, cols = -Date, names_to = "Variable", values_to = "Value")
+      df_long$Variable <- factor(df_long$Variable, levels = c("Signal", "Mean"))
+      if (name_six_diff[i] == "GPS_ERA"){
+        brp = main_segments$end
+      }else{
+        brp = nearby_segments$end
+      }      
+      brp = as.Date(brp, format="%Y-%m-%d")
+      brp = brp[-length(brp)]
+      
+      p <- ggplot(df_long, aes(x = Date, y = Value, col = Variable)) + 
+        theme_minimal() + 
+        geom_line(lwd = 0.2) + # or geom_point() depending on your data
+        scale_color_manual(values = c("Signal" = "lightblue", "Mean" = "red")) +
+        geom_vline(xintercept = brp, lty = 3, lwd = 0.2)  
+    }else{
+      p <- ggplot(df, aes(x = Date, y = Signal)) + 
+        theme_minimal() + 
+        geom_line(color = "lightblue", lwd = 0.2)
+    }
+    
+    p <- p + 
+      labs(subtitle = name_six_diff[i]) + 
+      ylab(expression(paste("IWV Difference ", (kg.m^-2)))) + 
+      xlab("") + 
+      ylim(ymin, ymax) + 
+      theme(
+        axis.text.x = element_text(size = 4.5), 
+        axis.text.y = element_text(size = 5),
+        legend.text = element_text(size=4),
+        axis.title = element_text(size = 5), 
+        legend.position = "none",
+        plot.tag = element_text(size = 6) ,
+        plot.subtitle = element_text(size = 6),
+        legend.title = element_blank(), 
+        legend.box.spacing = unit(0, "pt"),
+        strip.text = element_text(size = 4), 
+        panel.grid.major = element_line(size = 0.1, color = "grey80"),  # Default might be around 0.5
+        panel.grid.minor = element_line(size = 0.05, color = "grey85"), # Default might be around 0.25
+        plot.margin = rep(unit(0,"null"),4))
+    # Add the plot to the list
+    plot_list[[i]] <- p
+  }
+  jpeg(paste0(path_results,"figure/", main_st, nearby_st ,".jpeg"),
+       width = 3000, height = 1800, res = 600) # change name
+  
+  grid.arrange(grobs = plot_list, nrow = 3, ncol = 2)
+  
+  dev.off() 
 }
+
+
+

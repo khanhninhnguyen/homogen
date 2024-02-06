@@ -255,7 +255,7 @@ for(suffix in name_six_diff) {
 }
 
 Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
-                       Data_Res_Test0[,1:6]) %>%
+                       Data_Res_Test0[,7:12]) %>%
   mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
 
 
@@ -263,7 +263,7 @@ Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
 suspect = Data_Res_Test0 %>%
   filter(abs(Jump_GPS_GPS1)<0.01)
 suspect_info = List_main[which(abs(Data_Res_Test0$Jump_GPS_GPS1)<0.01),]
-# distribution 
+# distribution -------------------
 
 # Transform the dataset to a long format for easier plotting with ggplot2
 # df_plot = Data_Res_Test[which(List_main$dd>50),]
@@ -290,31 +290,17 @@ ggplot(df_long, aes(x = Value)) +
   # labs(title = "Distribution of T-value Columns", x = "Value", y = "Density") +
   theme_minimal() +
   xlim(0,0.7)
-# plot the suspected cases
-case_ind = 1096
-main_st = Data_Res_Test$main[case_ind]
-brp_test = Data_Res_Test$brp[case_ind]
-brp = brp_test
-nearby_st = Data_Res_Test$nearby[case_ind]
-name_i = paste0(Data_Res_Test$main[case_ind], 
-                Data_Res_Test$brp[case_ind], 
-                Data_Res_Test$nearby[case_ind])
-
-main_beg = List_main$main_beg_new[case_ind]
-main_end = List_main$main_end_new[case_ind]
-nearby_beg = List_main$nearby_beg_new[case_ind]
-nearby_end = List_main$nearby_end_new[case_ind]
-test_res = Data_Res_Test_fillNA[case_ind,]
-
-suspect1 = which(abs(Data_Res_Test_fillNA$Jump_GPS_ERA)>3)
-suspect2 = which(abs(Data_Res_Test_fillNA$Jump_GPS_GPS1)>3)
-suspect3 = which(abs(Data_Res_Test_fillNA$Jump_GPS_ERA1)>3)
+# Inspect the suspected cases ----------------------------
+# 
+# suspect1 = which(abs(Data_Res_Test_fillNA$Jump_GPS_ERA)>3)
+# suspect2 = which(abs(Data_Res_Test_fillNA$Jump_GPS_GPS1)>3)
+# suspect3 = which(abs(Data_Res_Test_fillNA$Jump_GPS_ERA1)>3)
 
 suspect_case = unique(suspect1, suspect2, suspect3)
+suspect_case = which(abs(Data_Res_Test[,-(1:3)]) >30)
 for (i in suspect_case) {
-  case_ind = i
-  main_st = Data_Res_Test$main[case_ind] 
-  brp_test = Data_Res_Test$brp[case_ind]
+  main_st = Data_Res_Test$main[i] 
+  brp_test = Data_Res_Test$brp[i]
   name_nearby_full = Data_Res_Test %>% 
     filter(main == main_st,
            brp == brp_test) %>%
@@ -322,16 +308,21 @@ for (i in suspect_case) {
     pull %>%
     tail(n = 1)
   
-  plot_test_res(main_st = Data_Res_Test$main[case_ind] ,
-                brp = Data_Res_Test$brp[case_ind], 
-                nearby_st = Data_Res_Test$nearby[case_ind],  
-                main_beg = List_main$main_beg_new[case_ind],
-                main_end = List_main$main_end_new[case_ind], 
-                nearby_beg = List_main$nearby_beg_new[case_ind], 
-                nearby_end = List_main$nearby_end_new[case_ind],
+  plot_test_res(main_st = Data_Res_Test$main[i] ,
+                brp = Data_Res_Test$brp[i], 
+                nearby_st = Data_Res_Test$nearby[i],  
+                main_beg = List_main$main_beg_new[i],
+                main_end = List_main$main_end_new[i], 
+                nearby_beg = List_main$nearby_beg_new[i], 
+                nearby_end = List_main$nearby_end_new[i],
                 name_nearby_full = name_nearby_full,
                 name_six_diff,
                 path_data_NGL)
+  plot_full_series(main_st = Data_Res_Test$main[i], 
+                   nearby_st = Data_Res_Test$nearby[i], 
+                   path_data_NGL = path_data_NGL, 
+                   date_mean = date_mean,
+                   name_six_diff = name_six_diff)
 }
 
 
