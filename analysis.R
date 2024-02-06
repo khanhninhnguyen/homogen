@@ -255,7 +255,7 @@ for(suffix in name_six_diff) {
 }
 
 Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
-                       Data_Res_Test0[,7:12]) %>%
+                       Data_Res_Test0[,1:6]) %>%
   mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
 
 
@@ -280,11 +280,11 @@ df_plot = Data_Res_Test %>%
   filter(Jump_GPS_ERA<0)
 
 # df_long <- pivot_longer(df_plot, cols = starts_with("Tvalue"), names_to = "Variable", values_to = "Value")
-df_long <- pivot_longer(df_plot, cols = starts_with("Std.err"), names_to = "Variable", values_to = "Value")
+df_long <- pivot_longer(df_plot, cols = starts_with("Jump"), names_to = "Variable", values_to = "Value")
 
 # Create the plots
 ggplot(df_long, aes(x = Value)) +
-  geom_histogram(binwidth = 0.005, fill = "blue", color = "black") + # Adjust binwidth as needed
+  geom_histogram(binwidth = 0.05, fill = "blue", color = "black") + # Adjust binwidth as needed
   facet_wrap(~ Variable, scales = "free", ncol = 3) +
   labs(title = "Distribution of Std.err ( d>25 km)", x = "Value", y = "Frequency") +
   # labs(title = "Distribution of T-value Columns", x = "Value", y = "Density") +
@@ -297,7 +297,8 @@ ggplot(df_long, aes(x = Value)) +
 # suspect3 = which(abs(Data_Res_Test_fillNA$Jump_GPS_ERA1)>3)
 
 suspect_case = unique(suspect1, suspect2, suspect3)
-suspect_case = which(abs(Data_Res_Test[,-(1:3)]) >30)
+suspect_case =  which(apply(Data_Res_Test[,4:9], 1, function(x) any(x > 30)))
+
 for (i in suspect_case) {
   main_st = Data_Res_Test$main[i] 
   brp_test = Data_Res_Test$brp[i]

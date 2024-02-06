@@ -200,8 +200,8 @@ for (i in c(13001:14000)) {
       beg = selected_cases$nearby_beg_new[i]
       end = selected_cases$nearby_end_new[i]
     }else{
-      beg = max(selected_cases$nearby_beg_new[i], selected_cases$nearby_beg_new[i])
-      end = min(selected_cases$nearby_end_new[i], selected_cases$nearby_end_new[i])
+      beg = max(selected_cases$main_beg_new[i], selected_cases$nearby_beg_new[i])
+      end = min(selected_cases$main_end_new[i], selected_cases$nearby_end_new[i])
     }
     
     name_series = name_six_diff[j]
@@ -253,9 +253,22 @@ for (i in c(13001:14000)) {
   save(fit.i, file = paste0(path_results, main_st, brp, nearby_st, "fgls.RData"))
 }
 
-
-
-
+#' fix the cases with bug ------------------
+#' find the bug cases
+find_bug <- function(main_beg_new,
+                     main_end_new,
+                     nearby_beg_new,
+                     nearby_end_new){
+  cond = as.integer((main_beg_new > nearby_beg_new) & 
+    (main_end_new > nearby_end_new))
+  return(cond)
+}
+fix_case <- selected_cases %>% 
+  rowwise() %>%
+  mutate(Fix = find_bug(main_beg_new,
+                               main_end_new,
+                               nearby_beg_new,
+                               nearby_end_new))
 
 # RUN THE CLASSIFICATION --------------------------------------------------
 
