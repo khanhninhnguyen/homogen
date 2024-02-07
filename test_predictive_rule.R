@@ -352,14 +352,16 @@ predictiver_rule_ver2 <- function(significance_level,
         } else {Nb.config.c <- R*0.2}
         config <- c(config,rep(c,Nb.config.c))
         
-        data.c <- purrr::map(List.names.final,~{
+        data.c <- purrr::map(List_names_final,~{
           Pop <- c()
           code.names.series <- config.code[which(colnames(Z.trunc.code) %in% .x)]
           eval(parse(text=paste0("Pop=Pop_",.x,"_",type.dataset,"[[",code.names.series,"]]")))
-          res.t=sample(Pop, Nb.config.c, replace = TRUE)
+          res.t=sample(Pop, Nb.config.c, replace = TRUE) # maybe change here 
           return(res.t)
-        }) %>% bind_cols() %>% as.data.frame()
-        colnames(data.c)=List.names.final
+        }) %>% 
+          bind_cols() %>% 
+          as.data.frame()
+        colnames(data.c)=List_names_final
         Data.res = rbind(Data.res,data.c)
       }
       
