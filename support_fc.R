@@ -614,6 +614,7 @@ plot_test_res <- function(main_st, brp, nearby_st,
                           main_beg, main_end, nearby_beg, nearby_end,
                           name_nearby_full,
                           name_six_diff,
+                          distance,
                           path_data_NGL){
   
   test_case = get(load(paste0(path_results, 
@@ -708,7 +709,7 @@ plot_test_res <- function(main_st, brp, nearby_st,
           panel.grid.minor = element_line(size = 0.05, color = "grey85"), # Default might be around 0.25
           plot.margin = rep(unit(0,"null"),4))
     
-  jpeg(paste0(path_results,"figure/", main_st, brp, nearby_st ,".jpeg"),
+  jpeg(paste0(path_results,"figure/", main_st, brp, nearby_st, "dist", distance ,".jpeg"),
        width = 3000, height = 1800, res = 600) # change name
   
   print(p)
@@ -721,7 +722,8 @@ plot_test_res <- function(main_st, brp, nearby_st,
 plot_full_series <- function(main_st, nearby_st, 
                              path_data_NGL, 
                              date_mean,
-                             name_six_diff){
+                             name_six_diff,
+                             distance){
   
   main_segments = date_mean %>% filter(name == main_st)
   nearby_segments = date_mean %>% filter(name == nearby_st)
@@ -810,7 +812,7 @@ plot_full_series <- function(main_st, nearby_st,
     # Add the plot to the list
     plot_list[[i]] <- p
   }
-  jpeg(paste0(path_results,"figure/", main_st, nearby_st ,".jpeg"),
+  jpeg(paste0(path_results,"figure/", main_st, nearby_st , "dist", distance, ".jpeg"),
        width = 3000, height = 1800, res = 600) # change name
   
   grid.arrange(grobs = plot_list, nrow = 3, ncol = 2)

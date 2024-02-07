@@ -255,14 +255,12 @@ for(suffix in name_six_diff) {
 }
 
 Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
-                       Data_Res_Test0[,1:6]) %>%
+                       Data_Res_Test0[,7:12]) %>%
   mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
 
-
-
-suspect = Data_Res_Test0 %>%
-  filter(abs(Jump_GPS_GPS1)<0.01)
-suspect_info = List_main[which(abs(Data_Res_Test0$Jump_GPS_GPS1)<0.01),]
+# suspect = Data_Res_Test0 %>%
+#   filter(abs(Jump_GPS_GPS1)<0.01)
+# suspect_info = List_main[which(abs(Data_Res_Test0$Jump_GPS_GPS1)<0.01),]
 # distribution -------------------
 
 # Transform the dataset to a long format for easier plotting with ggplot2
@@ -270,10 +268,10 @@ suspect_info = List_main[which(abs(Data_Res_Test0$Jump_GPS_GPS1)<0.01),]
 Data_Res_Test_fillNA <- Data_Res_Test %>%
   arrange(main, brp) %>%
   group_by(main, brp) %>%
-  mutate(Std.err_GPS_ERA = if_else(is.na(Jump_GPS_ERA), 
-                                  lag(Jump_GPS_ERA, order_by = brp, default = NA), 
-                                  Jump_GPS_ERA)) %>%
-  fill(Jump_GPS_ERA, .direction = "downup") %>%
+  mutate(Std.err_GPS_ERA = if_else(is.na(Tvalue_GPS_ERA), 
+                                  lag(Tvalue_GPS_ERA, order_by = brp, default = NA), 
+                                  Tvalue_GPS_ERA)) %>%
+  fill(Tvalue_GPS_ERA, .direction = "downup") %>%
   ungroup()
 
 df_plot = Data_Res_Test %>% 
@@ -290,6 +288,68 @@ ggplot(df_long, aes(x = Value)) +
   # labs(title = "Distribution of T-value Columns", x = "Value", y = "Density") +
   theme_minimal() +
   xlim(0,0.7)
+
+####' Distribution of G-E in 2 sides 
+
+df_plot = data.frame(Raw = na.omit(Data_Res_Test0$Tvalue_GPS_ERA)) %>%
+  mutate(Value = abs(Raw))
+df_plot$sign <- ifelse(df_plot$Raw < 0, "Negative", "Positive")
+
+df_plot %>%
+  
+  ggplot( aes(x=Value, fill=sign)) + theme_bw()+
+  geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', bins = 100) +
+  scale_fill_manual(values=c("#69b3a2", "#404080")) + 
+  labs(title = "Histogram of the amplitude of T-values separated by sign")
+
+
+# population of tests -----------------------------------------------------
+df = Data_Res_Test_fillNA[which(fix_case$Fix == 0),-10] 
+df <- df %>%
+  group_by(main, brp) %>%
+  mutate(Tvalue_GPS_ERA = ifelse(duplicated(Tvalue_GPS_ERA), NA, Tvalue_GPS_ERA)) %>%
+  ungroup()
+# Reshape data to long format
+df_long <- df[, -c(1:3)] %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value") %>%
+  drop_na()  # Drop NA values to avoid including them in the categorization
+
+# Categorize each value
+df_long$Category <- case_when(
+  df_long$Value < -1.96 ~ "-1",
+  df_long$Value >= -1.96 & df_long$Value <= 1.96 ~ "0",
+  df_long$Value > 1.96 ~ "1",
+  TRUE ~ "Other"
+)
+
+# Count the occurrences of each category for each variable
+df_summary <- df_long %>%
+  count(Variable, Category)
+df_summary$Variable <- as.character(sub("Tvalue_", "", df_summary$Variable))
+df_summary$Variable = factor(df_summary$Variable,  
+                            levels = c("GPS_ERA", "GPS_ERA1", "GPS_GPS1", "GPS1_ERA1", "GPS1_ERA", "ERA_ERA1"))
+df_summary$Category = factor(df_summary$Category, levels = c("-1", "0", "1"))
+# Plot
+p <- ggplot(df_summary, aes(fill=Category, y=n, x=Variable)) + 
+  geom_bar(position="stack", stat="identity")+
+  theme_minimal()+
+  geom_text(aes(label = n),
+            colour = "black",  size=1.8,
+            position = position_stack(vjust = 0.5)) +
+  labs(x = NULL, y ="Count") + 
+  theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
+        axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
+        plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
+        legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
+ggsave(paste0(path_results,"attribution/pop_significance_level1.jpg" ), 
+       plot = p, 
+       width = 8,
+       height = 5,
+       units = "cm",
+       dpi = 1200,
+       bg="white")
+
+
 # Inspect the suspected cases ----------------------------
 # 
 # suspect1 = which(abs(Data_Res_Test_fillNA$Jump_GPS_ERA)>3)
@@ -297,8 +357,8 @@ ggplot(df_long, aes(x = Value)) +
 # suspect3 = which(abs(Data_Res_Test_fillNA$Jump_GPS_ERA1)>3)
 
 suspect_case = unique(suspect1, suspect2, suspect3)
-suspect_case =  which(apply(Data_Res_Test[,4:9], 1, function(x) any(x > 30)))
-
+# suspect_case =  which(apply(Data_Res_Test[,4:9], 1, function(x) any(x > 30)))
+suspect_case = which(abs(Data_Res_Test0$Tvalue_GPS_ERA) <1.96)
 for (i in suspect_case) {
   main_st = Data_Res_Test$main[i] 
   brp_test = Data_Res_Test$brp[i]
@@ -318,12 +378,14 @@ for (i in suspect_case) {
                 nearby_end = List_main$nearby_end_new[i],
                 name_nearby_full = name_nearby_full,
                 name_six_diff,
-                path_data_NGL)
+                path_data_NGL,
+                distance = round(List_main$dd[i], digits = 1))
   plot_full_series(main_st = Data_Res_Test$main[i], 
                    nearby_st = Data_Res_Test$nearby[i], 
                    path_data_NGL = path_data_NGL, 
                    date_mean = date_mean,
-                   name_six_diff = name_six_diff)
+                   name_six_diff = name_six_diff,
+                   distance = round(List_main$dd[i], digits = 1))
 }
 
 

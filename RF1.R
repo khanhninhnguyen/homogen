@@ -27,6 +27,8 @@ list_name_test = c("G-E", "G-G'", "G-E'", "E-E'", "G'-E'","G'-E")
 
 library(caret)
 source(file = paste0(path_code, "support_RF1.R"))
+source(file = paste0(path_code, "test_predictive_rule.R"))
+
 path_restest <- paste0(path_results,"attribution/predictive_rule/")
 file_path_Results=paste0(path_results,'attribution/predictive_rule/')
 
@@ -46,7 +48,24 @@ Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
                        Data_Res_Test0[,7:12]) %>%
   mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
 
-a = predictiver_rule (significance_level, B=1, 
+#' remove the err cases
+#' 
+find_bug <- function(main_beg_new, main_end_new, nearby_beg_new, nearby_end_new){
+  cond = as.integer((main_beg_new > nearby_beg_new) & 
+                      (main_end_new > nearby_end_new))
+  return(cond)
+}
+fix_case <- List_main %>% 
+  rowwise() %>%
+  mutate(Fix = find_bug(main_beg_new,
+                        main_end_new,
+                        nearby_beg_new,
+                        nearby_end_new))
+
+Data_Res_Test <- Data_Res_Test[which(fix_case$Fix == 0),]
+
+
+a = predictiver_rule_original (significance_level, B=1, 
                   offset, 
                   GE,
                   number_pop,
