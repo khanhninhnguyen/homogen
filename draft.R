@@ -129,3 +129,16 @@ a <- infor_all %>%
             by = join_by(main == name_main, 
                          brp == t_break,
                          nearby == name_nearby))
+a = rep(NA,20)
+for (b in c(1:20)) {
+  FinalPred <- readRDS(paste0(file_path_Results,
+                              'original',
+                              "/Res.pred_",
+                              b,
+                              significance_level, 
+                              offset, 
+                              GE, 
+                              number_pop,
+                              ".rds"))
+  a[b] = FinalPred$err.tot
+}

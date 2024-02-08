@@ -9,11 +9,11 @@
 ####### Test result - remove when finish ##################
   
 significance_level = 0.05
-B = 2
+B = 20
 offset=0
 GE=0
 number_pop = 3
-R = 10
+R = 100
 prob <- c(0.18225,0.010125,0.010125,0.010125,0.0005625,0.0005625,0.010125,0.0005625,0.0005625,
           0.010125,0.010125,0.18225,0.0005625,0.0005625,0.010125,0.0005625,0.0005625,0.010125,
           0.18225,0.010125,0.010125,0.010125,0.0005625,0.0005625,0.010125,0.0005625,0.0005625,
@@ -63,9 +63,9 @@ fix_case <- List_main %>%
                         nearby_end_new))
 
 Data_Res_Test <- Data_Res_Test[which(fix_case$Fix == 0),]
+rownames(Data_Res_Test) <- NULL
 
-
-a = predictiver_rule_original (significance_level, B=1, 
+a = predictiver_rule_original(significance_level, B, 
                   offset, 
                   GE,
                   number_pop,
@@ -75,9 +75,23 @@ a = predictiver_rule_original (significance_level, B=1,
                   remove_var,
                   list_name_test,
                   Data_Res_Test, 
-                  path_restest)
+                  path_restest,
+                  version = "original")
+write.table(a, file = paste0(path_restest, 'original', "/FinalTable.txt"), sep = '\t', quote = FALSE)
 
-
+a1 = predictiver_rule_ver2(significance_level, B, 
+                              offset, 
+                              GE,
+                              number_pop,
+                              R,
+                              prob, 
+                              keep_config,
+                              remove_var,
+                              list_name_test,
+                              Data_Res_Test, 
+                              path_restest,
+                              version = "ver1")
+write.table(a1, file = paste0(path_restest, 'ver1', "/FinalTable.txt"), sep = '\t', quote = FALSE)
 
 
 

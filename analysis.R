@@ -389,3 +389,48 @@ for (i in suspect_case) {
 }
 
 
+
+
+# comparison result of prediction -----------------------------------------
+ori = read.table(file = paste0(path_restest, 'original', "/FinalTable.txt"))
+ver1 = read.table(file = paste0(path_restest, 'ver1', "/FinalTable.txt"))
+
+# Create a new column that highlights differences
+df = data.frame(ori = ori$pred.y, ver1 = ver1$pred.y)
+
+df_counts <- df %>%
+  pivot_longer(cols = c(ori, ver1), names_to = "Column", values_to = "Value") %>%
+  group_by(Column, Value) %>%
+  summarise(Frequency = n(), .groups = 'drop') %>%
+  ungroup()
+
+# Plot
+ggplot(df_counts, aes(x = as.factor(Value), y = Frequency, fill = Column)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Comparison of Unique Value Frequencies in ori and ver1",
+       x = "Value",
+       y = "Frequency",
+       fill = "Column") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+df_diff <- df %>%
+  filter(ori != ver1) %>%
+  group_by(ori, ver1) %>%
+  summarise(Frequency = n(), .groups = 'drop')
+all_values <- unique(c(df$ori, df$ver1))
+
+# Plot
+ggplot(df_diff, aes(x = ori, y = ver1, size = Frequency)) +
+  geom_point(alpha = 0.7, color = "blue") +
+  scale_x_discrete(limits = all_values) + # Set all unique values for x-axis
+  scale_y_discrete(limits = all_values) + # Set all unique values for y-axis
+  labs(title = "Frequency of Differences Between ori and ver1",
+       x = "Original",
+       y = "Version 1",
+       size = "Frequency") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "right")
+
