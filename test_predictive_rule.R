@@ -259,4 +259,5 @@ predictiver_rule_ver4 <- function(significance_level,
   
   return(FinalTable)
   
+  
 }
