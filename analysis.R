@@ -392,8 +392,8 @@ for (i in suspect_case) {
 
 
 # comparison result of prediction -----------------------------------------
-ori = read.table(file = paste0(path_restest, 'original', "/FinalTable.txt"))
-ver1 = read.table(file = paste0(path_restest, 'ver1', "/FinalTable.txt"))
+ori = read.table(file = paste0(path_restest, 'original_R100', "/FinalTable.txt"))
+ver1 = read.table(file = paste0(path_restest, 'ver1_R100', "/FinalTable.txt"))
 
 # Create a new column that highlights differences
 df = data.frame(ori = ori$pred.y, ver1 = ver1$pred.y)

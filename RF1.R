@@ -91,7 +91,7 @@ Data_Res_Test_fillNA <- Data_Res_Test_fillNA[which(fix_case$Fix == 0),]
 #                   version = "original")
 # write.table(a, file = paste0(path_restest, 'original', "/FinalTable.txt"), sep = '\t', quote = FALSE)
 
-a1 = predictiver_rule_ver3(significance_level, B, 
+a1 = predictiver_rule_ver2(significance_level, B, 
                               offset, 
                               GE,
                               number_pop,
@@ -101,10 +101,10 @@ a1 = predictiver_rule_ver3(significance_level, B,
                               remove_var,
                               list_name_test,
                               Data_Res_Test, 
-                              Data_Res_Test_fillNA,
+                              # Data_Res_Test_fillNA,
                               path_restest,
-                              version = "ver1")
-write.table(a1, file = paste0(path_restest, 'ver2', "/FinalTable.txt"), sep = '\t', quote = FALSE)
+                              version = "ver1_R100")
+write.table(a1, file = paste0(path_restest, 'ver1_R100', "/FinalTable.txt"), sep = '\t', quote = FALSE)
 
 
 
