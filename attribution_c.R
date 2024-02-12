@@ -164,6 +164,7 @@ column_classes <- c(rep("character",2), rep("numeric",3),
 list_characteried_segments = read.table(file = paste0(path_results, 
                                                   "List_longest_segment.txt"), 
                                     header = TRUE, colClasses = column_classes)
+
 for (i in c(13001:14000)) {
   fit.i = list()
   
