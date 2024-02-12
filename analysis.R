@@ -392,45 +392,66 @@ for (i in suspect_case) {
 
 
 # comparison result of prediction -----------------------------------------
+
+
+# Define variable names
+ori_col_name <- "R=100"
+ver1_col_name <- "R=400"
+title_name = "Results of the modified method (ver1) between"
+
 ori = read.table(file = paste0(path_restest, 'original_R100', "/FinalTable.txt"))
-ver1 = read.table(file = paste0(path_restest, 'ver1_R100', "/FinalTable.txt"))
+ver1 = read.table(file = paste0(path_restest, 'original', "/FinalTable.txt"))
 
-# Create a new column that highlights differences
+# Create a new dataframe with specified column names
 df = data.frame(ori = ori$pred.y, ver1 = ver1$pred.y)
+names(df) <- c(ori_col_name, ver1_col_name)  # Apply the variable names
 
+common_freqs <- df %>%
+  filter(!!sym(ori_col_name) == !!sym(ver1_col_name)) %>%
+  count(!!sym(ori_col_name)) %>%
+  rename(Value = ori_col_name, CommonFreq = n)
+
+# Step 2: Calculate individual frequencies for visualization
 df_counts <- df %>%
-  pivot_longer(cols = c(ori, ver1), names_to = "Column", values_to = "Value") %>%
+  pivot_longer(cols = all_of(c(ori_col_name, ver1_col_name)), names_to = "Column", values_to = "Value") %>%
   group_by(Column, Value) %>%
   summarise(Frequency = n(), .groups = 'drop') %>%
   ungroup()
 
-# Plot
-ggplot(df_counts, aes(x = as.factor(Value), y = Frequency, fill = Column)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "Comparison of Unique Value Frequencies in ori and ver1",
-       x = "Value",
-       y = "Frequency",
-       fill = "Column") +
+# Join the common frequencies with the df_counts for plotting
+df_counts <- df_counts %>%
+  left_join(common_freqs, by = "Value")
+
+# Step 3: Plotting
+ggplot(df_counts) +
+  geom_bar(aes(x = Value, y = Frequency, fill = Column), stat = "identity", position = position_dodge(width = 0.9)) +
+  geom_segment(aes(x = as.numeric(Value) - 0.4, xend = as.numeric(Value) + 0.4,
+                   y = CommonFreq, 
+                   yend = CommonFreq, 
+                   group = 1), color = "black") +
+  labs(title = paste(title_name, ori_col_name, "and", ver1_col_name),
+       x = "Value", y = "Frequency", fill = "Column") +
   theme_minimal() +
+  scale_x_discrete(limits = all_values) + # Set all unique values for x-axis
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-
+# Plot where the difference come from
 df_diff <- df %>%
-  filter(ori != ver1) %>%
-  group_by(ori, ver1) %>%
+  filter(!!sym(ori_col_name) != !!sym(ver1_col_name)) %>%
+  group_by_at(vars(ori_col_name, ver1_col_name)) %>%
   summarise(Frequency = n(), .groups = 'drop')
-all_values <- unique(c(df$ori, df$ver1))
 
-# Plot
-ggplot(df_diff, aes(x = ori, y = ver1, size = Frequency)) +
+# Get all unique values for axis limits
+all_values <- sort(unique(c(df[[ori_col_name]], df[[ver1_col_name]])))
+
+ggplot(df_diff,aes(x = !!sym(ori_col_name), y = !!sym(ver1_col_name), size = Frequency)) +
   geom_point(alpha = 0.7, color = "blue") +
   scale_x_discrete(limits = all_values) + # Set all unique values for x-axis
   scale_y_discrete(limits = all_values) + # Set all unique values for y-axis
-  labs(title = "Frequency of Differences Between ori and ver1",
-       x = "Original",
-       y = "Version 1",
+  labs(title = paste(title_name, ori_col_name, "and", ver1_col_name),
+       x = ori_col_name,
+       y = ver1_col_name,
        size = "Frequency") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "right")
-
