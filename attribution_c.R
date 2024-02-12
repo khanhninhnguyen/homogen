@@ -167,7 +167,6 @@ list_characteried_segments = read.table(file = paste0(path_results,
 
 list_fix_test <- which(fix_case$Fix == 1)
 for (i in c(list_fix_test[1])) {
-  fit.i = list()
   
   main_st = selected_cases$main[i]
   brp = selected_cases$brp[i]
@@ -178,6 +177,9 @@ for (i in c(list_fix_test[1])) {
                           main_st = main_st, 
                           nearby_st = nearby_st,
                           name_six_diff = name_six_diff)
+  
+  fit.i = get(load(file = paste0(path_results, main_st, brp, nearby_st, "fgls.RData")))
+  
   imax = nrow(selected_cases)
   if(i < imax){
     if(main_st == selected_cases$main[i+1] & brp == selected_cases$brp[i+1]){
@@ -193,6 +195,8 @@ for (i in c(list_fix_test[1])) {
     list_characteried_segments$main == main_st &
       list_characteried_segments$nearby == nearby_st,
   ),])
+  
+  list_ind = c(2,3,4,6)
   
   for (j in list_ind) {
     if(j == 1){
@@ -260,17 +264,48 @@ for (i in c(list_fix_test[1])) {
 find_bug <- function(main_beg_new,
                      main_end_new,
                      nearby_beg_new,
-                     nearby_end_new){
-  cond = as.integer((main_beg_new > nearby_beg_new) & 
-    (main_end_new > nearby_end_new))
+                     nearby_end_new,
+                     beg_test,
+                     end_test){
+  con1 = main_beg_new > nearby_beg_new
+  con2 = main_end_new < nearby_end_new
+  
+  if(con1){
+    con3 = as.integer(beg_test < main_beg_new)
+  }else{
+    con3 = 0
+  }
+  
+  if(con2){
+    con4 = as.integer(end_test > main_beg_new)
+  }else{
+    con4 =0
+  }
+  cond = as.integer(con3==1 | con4==1) 
+  
   return(cond)
 }
-fix_case <- selected_cases %>% 
+
+fix_case <- List_main %>% 
   rowwise() %>%
   mutate(Fix = find_bug(main_beg_new,
-                               main_end_new,
-                               nearby_beg_new,
-                               nearby_end_new))
+                         main_end_new,
+                         nearby_beg_new,
+                         nearby_end_new, 
+                        beg_test,
+                        end_test))
+List_main$beg_test <- selected_cases$main_beg_new
+List_main$end_test <- selected_cases$main_end_new
+
+for (k in c(1:nrow(List_main))) {
+  main_st = List_main$main[k]
+  brp = List_main$brp[k]
+  nearby_st = List_main$nearby[k]
+  fit.i = get(load(file = paste0(path_results, main_st, brp, nearby_st, "fgls.RData")))
+  List_main$beg_test[k] <- fit.i$GPS_GPS1$design.matrix$date[1]
+  List_main$end_test[k] <- fit.i$GPS_GPS1$design.matrix$date[length(fit.i$GPS_GPS1$design.matrix$date)]
+  
+}
 
 # RUN THE CLASSIFICATION --------------------------------------------------
 
