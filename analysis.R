@@ -394,35 +394,38 @@ for (i in suspect_case) {
 # comparison result of prediction -----------------------------------------
 
 
-# Define variable names
-ori_col_name <- "R=100"
-ver1_col_name <- "R=400"
-title_name = "Results of the modified method (ver1) between"
+# Define variable names and read results 
+ori_col_name <- "Ori"
+ver1_col_name <- "Ver1"
+title_name = "Results when R =400 of"
 
-ori = read.table(file = paste0(path_restest, 'original_R100', "/FinalTable.txt"))
-ver1 = read.table(file = paste0(path_restest, 'original', "/FinalTable.txt"))
+ori = read.table(file = paste0(path_restest, 'original', "/FinalTable.txt"))
+ver1 = read.table(file = paste0(path_restest, 'ver1', "/FinalTable.txt"))
 
-# Create a new dataframe with specified column names
+## Create a new dataframe with specified column names
 df = data.frame(ori = ori$pred.y, ver1 = ver1$pred.y)
 names(df) <- c(ori_col_name, ver1_col_name)  # Apply the variable names
+
+all_values <- sort(unique(c(df[[ori_col_name]], df[[ver1_col_name]])))
+
 
 common_freqs <- df %>%
   filter(!!sym(ori_col_name) == !!sym(ver1_col_name)) %>%
   count(!!sym(ori_col_name)) %>%
   rename(Value = ori_col_name, CommonFreq = n)
 
-# Step 2: Calculate individual frequencies for visualization
+## Step 2: Calculate individual frequencies for visualization
 df_counts <- df %>%
   pivot_longer(cols = all_of(c(ori_col_name, ver1_col_name)), names_to = "Column", values_to = "Value") %>%
   group_by(Column, Value) %>%
   summarise(Frequency = n(), .groups = 'drop') %>%
   ungroup()
 
-# Join the common frequencies with the df_counts for plotting
+## Join the common frequencies with the df_counts for plotting
 df_counts <- df_counts %>%
   left_join(common_freqs, by = "Value")
 
-# Step 3: Plotting
+## Step 3: Plotting
 ggplot(df_counts) +
   geom_bar(aes(x = Value, y = Frequency, fill = Column), stat = "identity", position = position_dodge(width = 0.9)) +
   geom_segment(aes(x = as.numeric(Value) - 0.4, xend = as.numeric(Value) + 0.4,
@@ -435,14 +438,11 @@ ggplot(df_counts) +
   scale_x_discrete(limits = all_values) + # Set all unique values for x-axis
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-# Plot where the difference come from
+## Plot where the difference come from
 df_diff <- df %>%
   filter(!!sym(ori_col_name) != !!sym(ver1_col_name)) %>%
   group_by_at(vars(ori_col_name, ver1_col_name)) %>%
   summarise(Frequency = n(), .groups = 'drop')
-
-# Get all unique values for axis limits
-all_values <- sort(unique(c(df[[ori_col_name]], df[[ver1_col_name]])))
 
 ggplot(df_diff,aes(x = !!sym(ori_col_name), y = !!sym(ver1_col_name), size = Frequency)) +
   geom_point(alpha = 0.7, color = "blue") +
@@ -455,3 +455,49 @@ ggplot(df_diff,aes(x = !!sym(ori_col_name), y = !!sym(ver1_col_name), size = Fre
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "right")
+
+## Study some problematic cases
+
+col_name1 <- "R=100"
+col_name2 <- "R=400"
+
+ori_r100 = read.table(file = paste0(path_restest, 'original_R100', "/FinalTable.txt"))
+ori = read.table(file = paste0(path_restest, 'original', "/FinalTable.txt"))
+ver1_r100 = read.table(file = paste0(path_restest, 'ver1_R100', "/FinalTable.txt"))
+ver1 = read.table(file = paste0(path_restest, 'ver1', "/FinalTable.txt"))
+
+table(ver1_r100[suspect_case,"pred.y"])
+table(ver1[suspect_case,"pred.y"])
+
+suspect_case = which(ori_r100$pred.y == 22 & ori$pred.y ==1)
+boxplot(Data_Res_Test[suspect_case, 5:9], outline = FALSE, ylim = c(-4,4), yaxt = 'n')
+at_ticks <- seq(from = -4, to = 4, by = 2)  # Adjust the 'by' value as needed
+axis(side = 2, at = at_ticks, las = 1)
+
+boxplot(ori[which(ori$pred.y==1 & is.na(ori$Z.truth)), 5:9], outline = FALSE)
+boxplot(Data_Res_Test[which(ori_r100$pred.y==3), 5:9], outline = FALSE)
+boxplot(Data_Res_Test[which(ver1_r100$pred.y==1), 5:9], outline = FALSE)
+boxplot(Data_Res_Test[which(ver1_r100$pred.y==3), 5:9], outline = FALSE)
+
+config_c =35
+con1 = ver1_r100$pred.y==config_c
+con2 = ver1$pred.y==config_c
+con3 = is.na(ver1_r100$Z.truth)
+con4 = is.na(ver1$Z.truth)
+
+df_plot = rbind(Data_Res_Test[which(con1&con3),],
+                Data_Res_Test[which(con2&con4),]) %>%
+  select(starts_with("T")) %>%
+  mutate(version = c(rep("ver1100", length(which(con1&con3))), 
+         rep("ver1400", length(which(con2&con4))))) 
+df_plot$version = factor(df_plot$version)
+df_long <- pivot_longer(df_plot[,-1], cols = starts_with("T"), names_to = "Variable", values_to = "Value")
+df_long$Variable <- sub("Tvalue_", "", df_long$Variable)
+df_long$Variable = factor(df_long$Variable, levels = name_six_diff[-1])
+ggplot(df_long, aes(x = Variable, y = Value, color = version))+
+  labs(title = paste0("Predicted configuration", config_c, " (not in the table)"))+
+  geom_boxplot(outlier.shape = NA)+
+  theme_minimal() +
+  ylim(-5,5)+
+  scale_fill_brewer(palette = "Set1")+
+  theme(axis.text = element_text(size = 12))

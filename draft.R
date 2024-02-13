@@ -1,4 +1,4 @@
-version = "original_R100"
+version = "original"
 a = rep(NA,20)
 for (b in c(1:20)) {
   FinalPred <- readRDS(paste0(file_path_Results,
