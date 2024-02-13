@@ -180,23 +180,25 @@ for (i in c(list_fix_test[1])) {
   
   fit.i = get(load(file = paste0(path_results, main_st, brp, nearby_st, "fgls.RData")))
   
-  imax = nrow(selected_cases)
-  if(i < imax){
-    if(main_st == selected_cases$main[i+1] & brp == selected_cases$brp[i+1]){
-      list_ind = c(2:6)
-    }else{
-      list_ind = c(1:6)
-    }
-  }else{
-    list_ind = c(1:6)
-  }
+  #' uncomment this to run the main test 
+  # imax = nrow(selected_cases)
+  # if(i < imax){
+  #   if(main_st == selected_cases$main[i+1] & brp == selected_cases$brp[i+1]){
+  #     list_ind = c(2:6)
+  #   }else{
+  #     list_ind = c(1:6)
+  #   }
+  # }else{
+  #   list_ind = c(1:6)
+  # }
+  
+  list_ind = c(2,3,4,6)
   
   six_noise_models = unlist(noise_model_all[which(
     list_characteried_segments$main == main_st &
       list_characteried_segments$nearby == nearby_st,
   ),])
   
-  list_ind = c(2,3,4,6)
   
   for (j in list_ind) {
     if(j == 1){
@@ -286,14 +288,6 @@ find_bug <- function(main_beg_new,
   return(cond)
 }
 
-fix_case <- List_main %>% 
-  rowwise() %>%
-  mutate(Fix = find_bug(main_beg_new,
-                         main_end_new,
-                         nearby_beg_new,
-                         nearby_end_new, 
-                        beg_test,
-                        end_test))
 List_main$beg_test <- selected_cases$main_beg_new
 List_main$end_test <- selected_cases$main_end_new
 
@@ -307,6 +301,14 @@ for (k in c(1:nrow(List_main))) {
   
 }
 
+fix_case <- List_main %>% 
+  rowwise() %>%
+  mutate(Fix = find_bug(main_beg_new,
+                        main_end_new,
+                        nearby_beg_new,
+                        nearby_end_new, 
+                        beg_test,
+                        end_test))
 # RUN THE CLASSIFICATION --------------------------------------------------
 
 
