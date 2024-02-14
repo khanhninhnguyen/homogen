@@ -13,7 +13,7 @@ B = 20
 offset=0
 GE=0
 number_pop = 3
-R = 100
+R = 10
 prob <- c(0.18225,0.010125,0.010125,0.010125,0.0005625,0.0005625,0.010125,0.0005625,0.0005625,
           0.010125,0.010125,0.18225,0.0005625,0.0005625,0.010125,0.0005625,0.0005625,0.010125,
           0.18225,0.010125,0.010125,0.010125,0.0005625,0.0005625,0.010125,0.0005625,0.0005625,
@@ -48,6 +48,11 @@ Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
                        Data_Res_Test0[,7:12]) %>%
   mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
 
+Data_Res_Test_fillNA <- Data_Res_Test %>%
+  arrange(main, brp) %>%
+  group_by(main, brp) %>%
+  fill(Tvalue_GPS_ERA, .direction = "downup") %>%
+  ungroup()
 #' remove the err cases
 #' 
 find_bug <- function(main_beg_new, main_end_new, nearby_beg_new, nearby_end_new){
@@ -62,20 +67,14 @@ fix_case <- List_main %>%
                         nearby_beg_new,
                         nearby_end_new))
 
-Data_Res_Test <- Data_Res_Test[which(fix_case$Fix == 0),]
-rownames(Data_Res_Test) <- NULL
+# Data_Res_Test <- Data_Res_Test[which(fix_case$Fix == 0),]
+# rownames(Data_Res_Test) <- NULL
 
-List_main <- List_main[which(fix_case$Fix == 0),]
-rownames(List_main) <- NULL
+# List_main <- List_main[which(fix_case$Fix == 0),]
+# rownames(List_main) <- NULL
 
-Data_Res_Test_fillNA <- Data_Res_Test %>%
-  arrange(main, brp) %>%
-  group_by(main, brp) %>%
-  fill(Tvalue_GPS_ERA, .direction = "downup") %>%
-  ungroup()
-
-Data_Res_Test_fillNA <- Data_Res_Test_fillNA[which(fix_case$Fix == 0),]
-
+# Data_Res_Test_fillNA <- Data_Res_Test_fillNA[which(fix_case$Fix == 0),]
+Data_Res_Test <- Data_Res_Test_fillNA[which(fix_case$Fix == 0),]
 # 
 # a = predictiver_rule_original(significance_level, B, 
 #                   offset, 

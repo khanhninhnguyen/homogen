@@ -13,8 +13,10 @@ predictiver_rule_ver4 <- function(significance_level,
                                   Data_Res_Test, 
                                   path_restest,
                                   version){
-  ### Remove insifnificant G-E
   
+
+  ### Remove insifnificant G-E
+  remove_var = NA
   #' construct the logical table 
   #' 
   rm.ind = which(remove_var %in% list_name_test)
@@ -43,6 +45,8 @@ predictiver_rule_ver4 <- function(significance_level,
   NbSim <- R * Nbconfig
   
   colnames(Data_Res_Test)[4:9] <- paste0("t", List_names_tot) 
+  Data_Res_Test  <- Data_Res_Test %>% 
+    filter(abs(tGE)>1.96) 
   
   #' check the configuration based on test only 
   t_cols <- colnames(Data_Res_Test)[4:9]
@@ -72,6 +76,7 @@ predictiver_rule_ver4 <- function(significance_level,
   results_list <- lapply(setNames(List_names_final, List_names_final), function(name) {
     Keep.Data(name, significance.level = significance_level, Data.Res.Test = Data_Res_Test)
   })
+
   
   for (name in names(results_list)) {
     assign(paste0("Data_", name), results_list[[name]])
@@ -93,7 +98,7 @@ predictiver_rule_ver4 <- function(significance_level,
     existing_pop_Test <- 0
     
     
-    while ((existing_pop_Learn!=15) & (existing_pop_Test !=15)){
+    while ((existing_pop_Learn!=17) & (existing_pop_Test !=17)){
       trainIndex <- createDataPartition(1:length_data, p = 0.8, list = FALSE)
       
       # Loop through each dataset name

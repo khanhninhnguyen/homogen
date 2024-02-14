@@ -91,8 +91,9 @@ Keep.Data <- function(name.series, significance.level, Data.Res.Test){
   names.t.series <- paste0("t",name.series)
   colnames.info <- c("main","brp","nearby")
   Data.Res <- Data.Res.Test[colnames(Data.Res.Test) %in% c(colnames.info,names.t.series)] 
-  Data.Res$t <- Data.Res[,which(colnames(Data.Res) %in% names.t.series)]
-  Data.Res <- Data.Res[,-which(colnames(Data.Res) %in% names.t.series)]
+  colnames(Data.Res)[which(colnames(Data.Res) == names.t.series)] <- "t"
+  # Data.Res$t <- Data.Res[,which(colnames(Data.Res) %in% names.t.series)]
+  # Data.Res <- Data.Res[,-which(colnames(Data.Res) %in% names.t.series)]
   Data.Res <- Data.Res %>% dplyr::mutate(p=2*pnorm(-abs(t))) %>%
     mutate(signif=ifelse(p<Thresh,1,0),
            t.sign=sign(t),
@@ -350,11 +351,6 @@ predictiver_rule <- function(significance_level,
   return(FinalTable)
   
 }
-
-
-
-
-
 
 
 predictiver_rule_ver3 <- function(significance_level,
