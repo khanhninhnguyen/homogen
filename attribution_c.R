@@ -166,7 +166,7 @@ list_characteried_segments = read.table(file = paste0(path_results,
                                     header = TRUE, colClasses = column_classes)
 
 list_fix_test <- which(fix_case$Fix == 1)
-for (i in c(list_fix_test[1])) {
+for (i in c(list_fix_test)) {
   
   main_st = selected_cases$main[i]
   brp = selected_cases$brp[i]
@@ -269,6 +269,7 @@ find_bug <- function(main_beg_new,
                      nearby_end_new,
                      beg_test,
                      end_test){
+  
   con1 = main_beg_new > nearby_beg_new
   con2 = main_end_new < nearby_end_new
   
@@ -279,9 +280,9 @@ find_bug <- function(main_beg_new,
   }
   
   if(con2){
-    con4 = as.integer(end_test > main_beg_new)
+    con4 = as.integer(end_test > main_end_new)
   }else{
-    con4 =0
+    con4 = 0
   }
   cond = as.integer(con3==1 | con4==1) 
   
@@ -309,8 +310,10 @@ fix_case <- List_main %>%
                         nearby_end_new, 
                         beg_test,
                         end_test))
-# RUN THE CLASSIFICATION --------------------------------------------------
 
+list_old1 = fix_case$Fix
+# RUN THE CLASSIFICATION --------------------------------------------------
+save(list_old1, file = paste0(path_restest, "list_error1.RData"))
 
 # APPLY THE BEST CLASSIFIER -----------------------------------------------
 
