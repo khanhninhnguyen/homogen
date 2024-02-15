@@ -153,6 +153,7 @@ predictiver_rule_ver4 <- function(significance_level,
           Nb_config_c <- R*0.8
           true_row <- intersect(which(Z_truth == config_true), trainIndex)
           if (length(true_row) > Nb_config_c){
+            print("full")
             ind_sel <- sample(true_row, Nb_config_c)
             data_c <- Data_Res_Test[ind_sel, paste0("t", List_names_final)]
             colnames(data_c) <- sub("^t", "", colnames(data_c))
@@ -164,14 +165,16 @@ predictiver_rule_ver4 <- function(significance_level,
               res.t = sample(Pop, Nb_config_c, replace = FALSE) # maybe change here 
               return(res.t)
             }) %>% 
+              set_names(List_names_final) %>%
               bind_cols() %>% 
               as.data.frame()
-            colnames(data_c) = List_names_final
-          }
+            print("resampling")
+            }
         } else {
           Nb_config_c <- R*0.2
           true_row <- intersect(which(Z_truth == config_true), c(1:length_data)[-trainIndex])
           if (length(true_row) > Nb_config_c){
+            print("full")
             ind_sel <- sample(true_row, Nb_config_c)
             data_c <- Data_Res_Test[ind_sel, paste0("t", List_names_final)]
             colnames(data_c) <- sub("^t", "", colnames(data_c))
@@ -183,9 +186,9 @@ predictiver_rule_ver4 <- function(significance_level,
               res.t = sample(Pop, Nb_config_c, replace = FALSE) # maybe change here 
               return(res.t)
             }) %>% 
+              set_names(List_names_final) %>%
               bind_cols() %>% 
               as.data.frame()
-            colnames(data_c) = List_names_final
           }
         }
         
@@ -247,6 +250,7 @@ predictiver_rule_ver4 <- function(significance_level,
                               ".rds"))
   FinalModel <- FinalPred$modrf
   
+  ### CONTINUE HERE 
   # apply the best rule to the real data  -----------------------------------
   
   RealData_x <- Data_Res_Test[,colnames(Data_Res_Test) %in% c("tGGp","tGEp","tEEp", "tGpEp","tGpE")]

@@ -18,7 +18,8 @@ summary_list_selected <- c(
   "- Columns 11-16: N_main/nearby/joint_bef & N_main/nearby/joint_aft - Point counts in main, nearby, and joint series segments before and after the change-point.",
   "- Columns 17-22: R_main/nearby/joint_bef & R_main/nearby/joint_aft - Point rate to total length of main, nearby, and joint series segments before and after the change-point.",
   "- Columns 23-24: Dd & Dh - Horizontal (km) and vertical (m) distances.",
-  "- Column 25: N_join_min - Minimum segment length of joint series."
+  "- Column 25: N_join_min - Minimum segment length of joint series.",
+  "- Column 26: change - Result have an error (0 = no, 1 = yes)."
 )
 
 FGLS_jump_tvalue <- c(

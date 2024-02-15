@@ -5,8 +5,8 @@ This package is used to attribute the change-points in relative homogenization.
 
 Output File Descriptions
 
-list_selected_nmin200_10nearby.txt 
- Examines change-points with up to 10 nearby stations, filtered by distance and length. Structure:
+list_selected_nmin200_10nearby.txt
+Examines change-points with up to 10 nearby stations, filtered by distance and length. Structure:
 - Column 1: Main - Name of the main station.
 - Column 2: Brp - Detected change-point.
 - Column 3: Nearby - Name of the nearby station.
@@ -18,6 +18,7 @@ list_selected_nmin200_10nearby.txt
 - Columns 17-22: R_main/nearby/joint_bef & R_main/nearby/joint_aft - Point rate to total length of main, nearby, and joint series segments before and after the change-point.
 - Columns 23-24: Dd & Dh - Horizontal (km) and vertical (m) distances.
 - Column 25: N_join_min - Minimum segment length of joint series.
+- Column 26: change - Result have an error (0 = no, 1 = yes).
 
 
 FGLS_jump_tvalue.txt: Estimated jumps and their t-values for each test from the FGLS procedure.
