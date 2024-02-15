@@ -9,7 +9,7 @@
 ####### Test result - remove when finish ##################
   
 significance_level = 0.05
-B = 2
+B = 20
 offset=0
 GE=0
 number_pop = 3
@@ -21,7 +21,7 @@ prob <- c(0.18225,0.010125,0.010125,0.010125,0.0005625,0.0005625,0.010125,0.0005
           0.00225,0.00225,0.0405,0.000125,0.000125,0.00225,0.000125,0.000125,0.00225,0.00225,
           0.0405,0.00225,0.000125,0.00225,0.000125,0.000125,0.00225,0.000125)
 keep_config <- c(1:3,6:15,17,19:24,26,28:30,33:40,43,46:49,52)
-version = "version_six_tests"
+version = "original"
 
 remove_var = "G-E"
 list_name_test = c("G-E", "G-G'", "G-E'", "E-E'", "G'-E'","G'-E")
@@ -91,7 +91,7 @@ Data_Res_Test <- Data_Res_Test_fillNA[which(fix_case$Fix == 0),]
 #                   version = "original")
 # write.table(a, file = paste0(path_restest, 'original', "/FinalTable.txt"), sep = '\t', quote = FALSE)
 
-a1 = predictiver_rule_ver2(significance_level, B, 
+a1 = predictiver_rule_ver4(significance_level, B, 
                               offset, 
                               GE,
                               number_pop,
@@ -101,10 +101,20 @@ a1 = predictiver_rule_ver2(significance_level, B,
                               remove_var,
                               list_name_test,
                               Data_Res_Test, 
-                              # Data_Res_Test_fillNA,
                               path_restest,
-                              version = "ver1_R100")
-write.table(a1, file = paste0(path_restest, 'ver1_R100', "/FinalTable.txt"), sep = '\t', quote = FALSE)
+                              version = version)
+write.table(a1, file = paste0(path_restest, version, "/FinalTable.txt"), sep = '\t', quote = FALSE)
 
-
+# check the similarity between different iteration 
+all_pred = combine_rules(version, 
+                        B,
+                        file_path_Results,
+                        Data_Res_Test,
+                        significance_level,
+                        offset,
+                        GE, 
+                        number_pop)
+for (j in c(2:ncol(all_pred))) {
+  plot_similiar(result = all_pred[,c(1,j)], version, names_iter = colnames(all_pred)[c(1,j)])
+}
 

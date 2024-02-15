@@ -23,7 +23,7 @@ predictiver_rule_ver4 <- function(significance_level,
   length_data = nrow(Data_Res_Test)
   
   Z_trunc_final_code = construct_logical_table(prob, keep_config, remove_var, list_name_test,
-                                               path_save = path_restest)
+                                               path_save = paste0(path_restest,version,"/"))
   
   List_names_tot = colnames(Z_trunc_final_code)
   if(length(rm.ind)!=0){
@@ -253,7 +253,7 @@ predictiver_rule_ver4 <- function(significance_level,
   ### CONTINUE HERE 
   # apply the best rule to the real data  -----------------------------------
   
-  RealData_x <- Data_Res_Test[,colnames(Data_Res_Test) %in% c("tGGp","tGEp","tEEp", "tGpEp","tGpE")]
+  RealData_x <- Data_Res_Test[,paste0("t",List_names_final)]
   colnames(RealData_x) <- List_names_final
   RealData_predy <- predict(FinalModel, newdata = RealData_x) 
   Final_pred_y <- config_list_final[RealData_predy]
@@ -270,3 +270,109 @@ predictiver_rule_ver4 <- function(significance_level,
   
   
 }
+
+combine_rules <- function(version, 
+                          B,
+                          file_path_Results,
+                          Data_Res_Test,
+                          significance_level,
+                          offset,
+                          GE, 
+                          number_pop){
+  version = "original"
+  error_list = rep(NA,B)
+  for (b in c(1:B)) {
+    FinalPred <- readRDS(paste0(file_path_Results,
+                                version,
+                                "/Res.pred_",
+                                b,
+                                significance_level, 
+                                offset, 
+                                GE, 
+                                number_pop,
+                                ".rds"))
+    error_list[b] = FinalPred$err.tot
+  }
+  List_names_final = FinalPred$modrf$coefnames
+  list_selected_rule = which(error_list == min(error_list))
+  
+  list_config = readRDS(paste0(file_path_Results,
+                               version,
+                               "/List_config.rds"))
+  config_list_final = as.numeric(rownames(list_config))
+  
+  if(length(List_names_final)<6){
+    RealData_x <- Data_Res_Test[,tail(names(Data_Res_Test), 5)]
+  }else{
+    RealData_x <- Data_Res_Test[,tail(names(Data_Res_Test), 6)]
+  }
+  colnames(RealData_x) <- List_names_final
+  
+  All_pred <- as.data.frame(matrix(NA,
+                                   nrow = nrow(RealData_x),
+                                   ncol = length(list_selected_rule)))
+  for (i in 1:length(list_selected_rule)) {
+    FinalPred_i <- readRDS(paste0(file_path_Results,
+                                version,
+                                "/Res.pred_",
+                                list_selected_rule[i],
+                                significance_level, 
+                                offset, 
+                                GE, 
+                                number_pop,
+                                ".rds"))
+    Model_i <- FinalPred_i$modrf
+    RealData_predy_i <- predict(Model_i, newdata = RealData_x) 
+    All_pred[,i] <- config_list_final[RealData_predy_i]
+  }
+  colnames(All_pred) <- paste0("iter", list_selected_rule)
+  return(All_pred)
+}
+
+plot_similiar <- function(result, version, names_iter){
+  names(result) <- c("iter1", "iter2")
+  all_class = sort(unique(unlist(result, use.names = FALSE)))
+  ratio_matrix <- matrix(0, nrow = length(all_class), ncol = length(all_class),
+                         dimnames = list(all_class, all_class))
+  
+  for (val1 in 1:length(all_class)) {
+    for (val2 in 1:length(all_class)) {
+      freq_iter1 <- sum(result$iter1 == all_class[val1])
+      common_freq <- sum(result$iter1 == all_class[val1] & result$iter2 == all_class[val2])
+      ratio <- ifelse(freq_iter1 > 0, common_freq / freq_iter1, 0)
+      ratio_matrix[val1, val2] <- ratio
+    }
+  }
+  
+  melted_matrix <- reshape2::melt(ratio_matrix, varnames = c("Value in iter1", "Value in iter2"))
+  
+  # Step 4: Plot the heatmap
+  p <- p <- ggplot(melted_matrix, aes(x = `Value in iter1`, y = `Value in iter2`, fill = value)) +
+    geom_tile(color = "grey", size = 0.1) +  # Add tile borders for distinction
+    scale_fill_gradient(low = "white", high = "blue") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 4.5),
+          axis.text.y = element_text(size = 5),
+          legend.text = element_text(size = 4),
+          axis.title = element_text(size = 5),
+          legend.key.size = unit(0.2, "cm"),
+          legend.title = element_blank(),
+          plot.tag = element_text(size = 6),
+          plot.subtitle = element_text(size = 6),
+          legend.box.spacing = unit(0, "pt"),
+          strip.text = element_text(size = 4),
+          panel.grid.major = element_blank(),  # Remove major grid lines
+          panel.grid.minor = element_blank(),  # Remove minor grid lines
+          panel.background = element_rect(fill = "white")) +
+    xlab(names_iter[1]) + 
+    ylab(names_iter[2]) +
+    scale_x_discrete(limits = all_class) +
+    scale_y_discrete(limits = all_class)
+  
+  jpeg(paste0(path_results,"figure/", version, names_iter[1], names_iter[2], ".jpeg"),
+       width = 2000, height = 1700, res = 600) # chan
+  print(p)
+  # print(ml1)
+  dev.off() 
+}
+
