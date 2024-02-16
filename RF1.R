@@ -114,7 +114,19 @@ all_pred = combine_rules(version,
                         offset,
                         GE, 
                         number_pop)
+Final_table = read.table(file = paste0(path_restest, version, "/FinalTable.txt"))
+z_truth = Final_table$Z.truth
+all_pred$truth = z_truth
+all_pred$iden = apply(all_pred, 1, function(row) {
+  if (is.na(row['truth'])) {
+    return(NA)  # Return NA if the 'truth' value is NA
+  }
+  sum(row[-length(row)] == row['truth'], na.rm = TRUE)
+})
+all_pred$iden = all_pred$iden /11
+table(all_pred$iden)
+
 for (j in c(2:ncol(all_pred))) {
-  plot_similiar(result = all_pred[,c(1,j)], version, names_iter = colnames(all_pred)[c(1,j)])
+  plot_similiar(result = all_pred[which(is.na(z_truth)),c(1,j)], version, names_iter = colnames(all_pred)[c(1,j)])
 }
 

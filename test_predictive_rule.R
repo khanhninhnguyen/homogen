@@ -338,8 +338,9 @@ plot_similiar <- function(result, version, names_iter){
   for (val1 in 1:length(all_class)) {
     for (val2 in 1:length(all_class)) {
       freq_iter1 <- sum(result$iter1 == all_class[val1])
+      freq_iter2 <- sum(result$iter2 == all_class[val2])
       common_freq <- sum(result$iter1 == all_class[val1] & result$iter2 == all_class[val2])
-      ratio <- ifelse(freq_iter1 > 0, common_freq / freq_iter1, 0)
+      ratio <- ifelse(max(freq_iter1, freq_iter2) > 0, common_freq / max(freq_iter1, freq_iter2), 0)
       ratio_matrix[val1, val2] <- ratio
     }
   }
@@ -349,7 +350,7 @@ plot_similiar <- function(result, version, names_iter){
   # Step 4: Plot the heatmap
   p <- p <- ggplot(melted_matrix, aes(x = `Value in iter1`, y = `Value in iter2`, fill = value)) +
     geom_tile(color = "grey", size = 0.1) +  # Add tile borders for distinction
-    scale_fill_gradient(low = "white", high = "blue") +
+    scale_fill_gradient(low = "white", high = "darkgreen") +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 4.5),
           axis.text.y = element_text(size = 5),
