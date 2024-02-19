@@ -235,7 +235,7 @@ df %>%
 # test results ------------------------------------------------------------
 library(gridExtra)
 path_restest <- paste0(path_results,"attribution/predictive_rule/")
-List_main = read.table(file = paste0(path_restest,"list_selected_nmin200_10nearby.txt"), 
+List_main = read.table(file = paste0(path_results,"list_selected_nmin200_10nearby.txt"), 
                        header = TRUE, 
                        stringsAsFactors = FALSE) 
 name_six_diff = c("GPS_ERA", "GPS_GPS1", "GPS_ERA1", "ERA_ERA1", "GPS1_ERA1", "GPS1_ERA")
@@ -255,7 +255,7 @@ for(suffix in name_six_diff) {
 }
 
 Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
-                       Data_Res_Test0[,7:12]) %>%
+                       Data_Res_Test0[,1:6]) %>%
   mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
 
 # suspect = Data_Res_Test0 %>%
@@ -372,17 +372,14 @@ for (i in suspect_case) {
   plot_test_res(main_st = Data_Res_Test$main[i] ,
                 brp = Data_Res_Test$brp[i], 
                 nearby_st = Data_Res_Test$nearby[i],  
-                main_beg = List_main$main_beg_new[i],
-                main_end = List_main$main_end_new[i], 
-                nearby_beg = List_main$nearby_beg_new[i], 
-                nearby_end = List_main$nearby_end_new[i],
                 name_nearby_full = name_nearby_full,
                 name_six_diff,
+                path_FGLS = paste0(path_results, "attribution/FGLS_cor/"),
                 path_data_NGL,
                 distance = round(List_main$dd[i], digits = 1))
-  plot_full_series(main_st = Data_Res_Test$main[i], 
-                   nearby_st = Data_Res_Test$nearby[i], 
-                   path_data_NGL = path_data_NGL, 
+  plot_full_series(main_st = Data_Res_Test$main[i],
+                   nearby_st = Data_Res_Test$nearby[i],
+                   path_data_NGL = path_data_NGL,
                    date_mean = date_mean,
                    name_six_diff = name_six_diff,
                    distance = round(List_main$dd[i], digits = 1))

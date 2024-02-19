@@ -520,7 +520,6 @@ extract_FGLS_result <- function(list_selected_cases, path_FGLS){
   # standard output contains jumps and t-values
   # additional results: other estimates, ARMA coefficient, MW var 
   list_selected_cases = selected_cases
-  path_FGLS = path_results
   nr <- nrow(list_selected_cases)
   
   main_res <- data.frame(matrix(NA, ncol = 12, nrow = nr))
@@ -532,7 +531,7 @@ extract_FGLS_result <- function(list_selected_cases, path_FGLS){
     name_i = paste0(list_selected_cases$main[i], 
                     list_selected_cases$brp[i], 
                     list_selected_cases$nearby[i])
-    test_i = get(load(paste0(path_results, 
+    test_i = get(load(paste0(path_FGLS, 
                              name_i,
                              "fgls.RData")))
     jump_est = sapply(c(1:6), function(x) test_i[[name_six_diff[x]]]$t.table$Estimate[9]) %>% 
@@ -611,16 +610,16 @@ extract_FGLS_result <- function(list_selected_cases, path_FGLS){
 #' plot time series 
 
 plot_test_res <- function(main_st, brp, nearby_st, 
-                          main_beg, main_end, nearby_beg, nearby_end,
                           name_nearby_full,
                           name_six_diff,
                           distance,
-                          path_data_NGL){
+                          path_data_NGL, 
+                          path_FGLS){
   
-  test_case = get(load(paste0(path_results, 
+  test_case = get(load(paste0(path_FGLS, 
                               paste0(main_st, brp, nearby_st),
                               "fgls.RData")))
-  test_main = get(load(paste0(path_results, 
+  test_main = get(load(paste0(path_FGLS, 
                               paste0(main_st, brp, name_nearby_full),
                               "fgls.RData")))
   
@@ -630,16 +629,24 @@ plot_test_res <- function(main_st, brp, nearby_st,
                           name_six_diff = name_six_diff)
   
   six_vars = names(df_data)[!names(df_data) %in% c("Date")]
-  five_vars <- six_vars[!six_vars %in% c("GPS_ERA")]
+  four_vars <- six_vars[!six_vars %in% c("GPS_ERA", "GPS1_ERA1")]
   
   mean_vec = rep(NA, 12)
   mean_vec[c(1:2)] <- test_main$GPS_ERA$coefficients[c("left", "right"), ]
   mean_vec[3:12] <- unlist(lapply(five_vars , function(x) test_case[[x]]$coefficients[c("left", "right"),]))
   
+  main_beg = test_main$GPS_ERA$design.matrix$date[1]
+  main_end = test_main$GPS_ERA$design.matrix$date[length(test_main$GPS_ERA$design.matrix$date)]
+  nearby_beg = test_case$GPS1_ERA1$design.matrix$date[1]
+  nearby_end = test_case$GPS1_ERA1$design.matrix$date[length(test_case$GPS1_ERA1$design.matrix$date)]
+  joint_beg = test_case$GPS_GPS1$design.matrix$date[1] 
+  joint_end = test_case$GPS_GPS1$design.matrix$date[length(test_case$GPS_GPS1$design.matrix$date)]
+  
   df_data = df_data %>% 
     mutate(GPS_ERA = if_else(Date < main_beg | Date > main_end, NA_real_, GPS_ERA)) %>% 
-    mutate(across(all_of(five_vars),
-                  ~if_else(Date < nearby_beg | Date > nearby_end, NA_real_, .)))
+    mutate(GPS1_ERA1 = if_else(Date < nearby_beg | Date > nearby_end, NA_real_, GPS1_ERA1)) %>% 
+    mutate(across(all_of(four_vars),
+                  ~if_else(Date < joint_beg | Date > joint_end, NA_real_, .)))
   
   
   df_data <- df_data[rowSums(is.na(df_data[, six_vars])) < length(six_vars), ] %>%

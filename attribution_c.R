@@ -261,7 +261,10 @@ for (i in c(list_fix_test)) {
   save(fit.i, file = paste0(path_results, main_st, brp, nearby_st, "fgls.RData"))
 }
 
-#' fix the cases with bug ------------------
+##' Extract results
+extract_FGLS_result(list_selected_cases = selected_cases, 
+                    path_FGLS = paste0(path_results, "attribution/FGLS/"))
+# fix the cases with bug ------------------
 #' find the bug cases
 find_bug <- function(main_beg_new,
                      main_end_new,
