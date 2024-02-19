@@ -234,7 +234,7 @@ df %>%
 
 # test results ------------------------------------------------------------
 library(gridExtra)
-path_restest <- paste0(path_results,"attribution/predictive_rule/")
+path_restest <- paste0(path_results,"attribution/FGLS_comb/")
 List_main = read.table(file = paste0(path_results,"list_selected_nmin200_10nearby.txt"), 
                        header = TRUE, 
                        stringsAsFactors = FALSE) 
@@ -255,16 +255,11 @@ for(suffix in name_six_diff) {
 }
 
 Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
-                       Data_Res_Test0[,1:6]) %>%
+                       Data_Res_Test0[,13:18]) %>%
   mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
 
-# suspect = Data_Res_Test0 %>%
-#   filter(abs(Jump_GPS_GPS1)<0.01)
-# suspect_info = List_main[which(abs(Data_Res_Test0$Jump_GPS_GPS1)<0.01),]
 # distribution -------------------
 
-# Transform the dataset to a long format for easier plotting with ggplot2
-# df_plot = Data_Res_Test[which(List_main$dd>50),]
 Data_Res_Test_fillNA <- Data_Res_Test %>%
   arrange(main, brp) %>%
   group_by(main, brp) %>%
@@ -275,19 +270,22 @@ Data_Res_Test_fillNA <- Data_Res_Test %>%
   ungroup()
 
 df_plot = Data_Res_Test %>% 
-  filter(Jump_GPS_ERA<0)
+  mutate(dist = List_main$dd) %>% 
+  mutate(d = ifelse(dist>50, 1,0))
 
+df_plot$d = as.factor(df_plot$d)
 # df_long <- pivot_longer(df_plot, cols = starts_with("Tvalue"), names_to = "Variable", values_to = "Value")
-df_long <- pivot_longer(df_plot, cols = starts_with("Jump"), names_to = "Variable", values_to = "Value")
+# df_long <- pivot_longer(df_plot, cols = starts_with("Jump"), names_to = "Variable", values_to = "Value")
+df_long <- pivot_longer(df_plot, cols = starts_with("Std"), names_to = "Variable", values_to = "Value")
 
 # Create the plots
-ggplot(df_long, aes(x = Value)) +
-  geom_histogram(binwidth = 0.05, fill = "blue", color = "black") + # Adjust binwidth as needed
+ggplot(df_long, aes(x = Value, fill = d)) +
+  geom_histogram(alpha=0.6, position = 'identity',binwidth = 0.005) + # Adjust binwidth as needed
   facet_wrap(~ Variable, scales = "free", ncol = 3) +
-  labs(title = "Distribution of Std.err ( d>25 km)", x = "Value", y = "Frequency") +
+  # labs(title = "Distribution of Std.err ( d>25 km)", x = "Value", y = "Frequency") +
   # labs(title = "Distribution of T-value Columns", x = "Value", y = "Density") +
   theme_minimal() +
-  xlim(0,0.7)
+  xlim(-2,2)
 
 ####' Distribution of G-E in 2 sides 
 
@@ -302,10 +300,24 @@ df_plot %>%
   scale_fill_manual(values=c("#69b3a2", "#404080")) + 
   labs(title = "Histogram of the amplitude of T-values separated by sign")
 
+## Desciptive analysis ----------------------------------
+df = Data_Res_Test %>% 
+  mutate(dist = List_main$dd) %>%
+  select(-c(main, brp, nearby, Std.err_GPS_ERA,Std.err_GPS1_ERA1))
+
+corr_matrix <- cor(df, use = "complete.obs")
+library(reshape2)
+melted_corr_matrix <- melt(corr_matrix)
+
+ggplot(melted_corr_matrix, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+  theme_minimal() +
+  labs(title = "Heat Map of Tvalue Correlations", x = "", y = "", fill = "Correlation")
 
 # population of tests -----------------------------------------------------
-df = Data_Res_Test_fillNA[which(fix_case$Fix == 0),-10] 
-df <- df %>%
+# df = Data_Res_Test_fillNA[which(fix_case$Fix == 0),-10] 
+df <- Data_Res_Test %>%
   group_by(main, brp) %>%
   mutate(Tvalue_GPS_ERA = ifelse(duplicated(Tvalue_GPS_ERA), NA, Tvalue_GPS_ERA)) %>%
   ungroup()
@@ -341,7 +353,7 @@ p <- ggplot(df_summary, aes(fill=Category, y=n, x=Variable)) +
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
-ggsave(paste0(path_results,"attribution/pop_significance_level1.jpg" ), 
+ggsave(paste0(path_results,"attribution/pop_significance_level>50.jpg" ), 
        plot = p, 
        width = 8,
        height = 5,
@@ -384,8 +396,6 @@ for (i in suspect_case) {
                    name_six_diff = name_six_diff,
                    distance = round(List_main$dd[i], digits = 1))
 }
-
-
 
 
 # comparison result of prediction -----------------------------------------

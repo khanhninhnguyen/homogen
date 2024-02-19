@@ -633,7 +633,7 @@ plot_test_res <- function(main_st, brp, nearby_st,
   
   mean_vec = rep(NA, 12)
   mean_vec[c(1:2)] <- test_main$GPS_ERA$coefficients[c("left", "right"), ]
-  mean_vec[3:12] <- unlist(lapply(five_vars , function(x) test_case[[x]]$coefficients[c("left", "right"),]))
+  mean_vec[3:12] <- unlist(lapply( six_vars[!six_vars %in% c("GPS_ERA")], function(x) test_case[[x]]$coefficients[c("left", "right"),]))
   
   main_beg = test_main$GPS_ERA$design.matrix$date[1]
   main_end = test_main$GPS_ERA$design.matrix$date[length(test_main$GPS_ERA$design.matrix$date)]

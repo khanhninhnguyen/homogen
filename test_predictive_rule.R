@@ -23,7 +23,7 @@ predictiver_rule_ver4 <- function(significance_level,
   length_data = nrow(Data_Res_Test)
   
   Z_trunc_final_code = construct_logical_table(prob, keep_config, remove_var, list_name_test,
-                                               path_save = paste0(path_restest,version,"/"))
+                                               path_save = paste0(file_path_Results,version,"/"))
   
   List_names_tot = colnames(Z_trunc_final_code)
   if(length(rm.ind)!=0){

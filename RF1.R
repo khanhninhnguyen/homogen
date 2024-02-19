@@ -13,7 +13,7 @@ B = 20
 offset=0
 GE=0
 number_pop = 3
-R = 100
+R = 400
 prob <- c(0.18225,0.010125,0.010125,0.010125,0.0005625,0.0005625,0.010125,0.0005625,0.0005625,
           0.010125,0.010125,0.18225,0.0005625,0.0005625,0.010125,0.0005625,0.0005625,0.010125,
           0.18225,0.010125,0.010125,0.010125,0.0005625,0.0005625,0.010125,0.0005625,0.0005625,
@@ -21,7 +21,7 @@ prob <- c(0.18225,0.010125,0.010125,0.010125,0.0005625,0.0005625,0.010125,0.0005
           0.00225,0.00225,0.0405,0.000125,0.000125,0.00225,0.000125,0.000125,0.00225,0.00225,
           0.0405,0.00225,0.000125,0.00225,0.000125,0.000125,0.00225,0.000125)
 keep_config <- c(1:3,6:15,17,19:24,26,28:30,33:40,43,46:49,52)
-version = "original"
+version = "ver1/400/"
 
 remove_var = "G-E"
 list_name_test = c("G-E", "G-G'", "G-E'", "E-E'", "G'-E'","G'-E")
@@ -30,12 +30,12 @@ library(caret)
 source(file = paste0(path_code, "support_RF1.R"))
 source(file = paste0(path_code, "test_predictive_rule.R"))
 
-path_restest <- paste0(path_results,"attribution/predictive_rule/")
+path_restest <- paste0(path_results,"attribution/FGLS_comb/")
 file_path_Results=paste0(path_results,'attribution/predictive_rule/')
 
 
 #' read test results 
-List_main = read.table(file = paste0(path_restest,"list_selected_nmin200_10nearby.txt"), 
+List_main = read.table(file = paste0(path_results,"list_selected_nmin200_10nearby.txt"), 
                        header = TRUE, 
                        stringsAsFactors = FALSE) 
 
@@ -53,20 +53,22 @@ Data_Res_Test_fillNA <- Data_Res_Test %>%
   arrange(main, brp) %>%
   group_by(main, brp) %>%
   fill(Tvalue_GPS_ERA, .direction = "downup") %>%
-  ungroup()
+  ungroup() %>%
+  filter(abs(Tvalue_GPS_ERA)>1.96)
+
 #' remove the err cases
 #' 
-find_bug <- function(main_beg_new, main_end_new, nearby_beg_new, nearby_end_new){
-  cond = as.integer((main_beg_new > nearby_beg_new) & 
-                      (main_end_new > nearby_end_new))
-  return(cond)
-}
-fix_case <- List_main %>% 
-  rowwise() %>%
-  mutate(Fix = find_bug(main_beg_new,
-                        main_end_new,
-                        nearby_beg_new,
-                        nearby_end_new))
+# find_bug <- function(main_beg_new, main_end_new, nearby_beg_new, nearby_end_new){
+#   cond = as.integer((main_beg_new > nearby_beg_new) & 
+#                       (main_end_new > nearby_end_new))
+#   return(cond)
+# }
+# fix_case <- List_main %>% 
+#   rowwise() %>%
+#   mutate(Fix = find_bug(main_beg_new,
+#                         main_end_new,
+#                         nearby_beg_new,
+#                         nearby_end_new))
 
 # Data_Res_Test <- Data_Res_Test[which(fix_case$Fix == 0),]
 # rownames(Data_Res_Test) <- NULL
@@ -75,21 +77,35 @@ fix_case <- List_main %>%
 # rownames(List_main) <- NULL
 
 # Data_Res_Test_fillNA <- Data_Res_Test_fillNA[which(fix_case$Fix == 0),]
-Data_Res_Test <- Data_Res_Test_fillNA[which(fix_case$Fix == 0),]
 # 
-# a = predictiver_rule_original(significance_level, B, 
-#                   offset, 
+# a = predictiver_rule_original(significance_level, B,
+#                   offset,
 #                   GE,
 #                   number_pop,
 #                   R,
-#                   prob, 
+#                   prob,
 #                   keep_config,
 #                   remove_var,
 #                   list_name_test,
-#                   Data_Res_Test, 
+#                   Data_Res_Test_fillNA,
 #                   path_restest,
-#                   version = "original")
-# write.table(a, file = paste0(path_restest, 'original', "/FinalTable.txt"), sep = '\t', quote = FALSE)
+#                   version = "original/R400/")
+# write.table(a, file = paste0(file_path_Results, 'original/R400/', "/FinalTable.txt"), sep = '\t', quote = FALSE)
+
+a = predictiver_rule_ver2(significance_level, 
+                          B,
+                          offset,
+                          GE,
+                          number_pop,
+                          R,
+                          prob,
+                          keep_config,
+                          remove_var,
+                          list_name_test,
+                          Data_Res_Test_fillNA,
+                          path_restest,
+                          version = "ver1/R400/")
+write.table(a, file = paste0(file_path_Results, 'ver1/R400/', "/FinalTable.txt"), sep = '\t', quote = FALSE)
 
 a1 = predictiver_rule_ver4(significance_level, B, 
                               offset, 
@@ -98,12 +114,12 @@ a1 = predictiver_rule_ver4(significance_level, B,
                               R,
                               prob, 
                               keep_config,
-                              remove_var,
+                              remove_var = NA,
                               list_name_test,
-                              Data_Res_Test, 
+                              Data_Res_Test_fillNA, 
                               path_restest,
-                              version = version)
-write.table(a1, file = paste0(path_restest, version, "/FinalTable.txt"), sep = '\t', quote = FALSE)
+                              version = "ver4/")
+write.table(a1, file = paste0(path_restest, "ver4", "/FinalTable.txt"), sep = '\t', quote = FALSE)
 
 # check the similarity between different iteration 
 all_pred = combine_rules(version, 
@@ -114,7 +130,7 @@ all_pred = combine_rules(version,
                         offset,
                         GE, 
                         number_pop)
-Final_table = read.table(file = paste0(path_restest, version, "/FinalTable.txt"))
+Final_table = read.table(file = paste0(file_path_Results, version, "/FinalTable.txt"))
 z_truth = Final_table$Z.truth
 all_pred$truth = z_truth
 all_pred$iden = apply(all_pred, 1, function(row) {
