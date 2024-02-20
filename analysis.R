@@ -402,12 +402,12 @@ for (i in suspect_case) {
 
 
 # Define variable names and read results 
-ori_col_name <- "Ori"
-ver1_col_name <- "Ver1"
-title_name = "Results when R =400 of"
+ori_col_name <- "Version 1"
+ver1_col_name <- "Version 4"
+title_name = "Results when R = 400"
 
-ori = read.table(file = paste0(path_restest, 'original', "/FinalTable.txt"))
-ver1 = read.table(file = paste0(path_restest, 'ver1', "/FinalTable.txt"))
+ori = read.table(file = paste0(file_path_Results, 'ver1/R400', "/FinalTable.txt"))
+ver1 = read.table(file = paste0(file_path_Results, 'ver4', "/FinalTable.txt"))
 
 ## Create a new dataframe with specified column names
 df = data.frame(ori = ori$pred.y, ver1 = ver1$pred.y)
@@ -468,10 +468,10 @@ ggplot(df_diff,aes(x = !!sym(ori_col_name), y = !!sym(ver1_col_name), size = Fre
 col_name1 <- "R=100"
 col_name2 <- "R=400"
 
-ori_r100 = read.table(file = paste0(path_restest, 'original_R100', "/FinalTable.txt"))
-ori = read.table(file = paste0(path_restest, 'original', "/FinalTable.txt"))
-ver1_r100 = read.table(file = paste0(path_restest, 'ver1_R100', "/FinalTable.txt"))
-ver1 = read.table(file = paste0(path_restest, 'ver1', "/FinalTable.txt"))
+ori_r100 = read.table(file = paste0(file_path_Results, 'original/R100', "/FinalTable.txt"))
+ori = read.table(file = paste0(file_path_Results, "original/R400", "/FinalTable.txt"))
+ver1_r100 = read.table(file = paste0(file_path_Results, 'ver1/R400', "/FinalTable.txt"))
+ver1 <- read.table(file = paste0(file_path_Results, 'ver4', "/FinalTable.txt"))
 
 table(ver1_r100[suspect_case,"pred.y"])
 table(ver1[suspect_case,"pred.y"])
@@ -486,24 +486,32 @@ boxplot(Data_Res_Test[which(ori_r100$pred.y==3), 5:9], outline = FALSE)
 boxplot(Data_Res_Test[which(ver1_r100$pred.y==1), 5:9], outline = FALSE)
 boxplot(Data_Res_Test[which(ver1_r100$pred.y==3), 5:9], outline = FALSE)
 
-config_c =35
-con1 = ver1_r100$pred.y==config_c
-con2 = ver1$pred.y==config_c
-con3 = is.na(ver1_r100$Z.truth)
-con4 = is.na(ver1$Z.truth)
+# config_c = 15
+# con1 = which(ori_r100$pred.y==config_c)
+# con2 = which(ver1_r100$pred.y==config_c)
+# con3 = which(is.na(ori_r100$Z.truth))
+# con4 = which(is.na(ver1_r100$Z.truth))
 
-df_plot = rbind(Data_Res_Test[which(con1&con3),],
-                Data_Res_Test[which(con2&con4),]) %>%
+config_c = 8
+con1 = which(ver1_r100$pred.y==config_c)
+con2 = which(ver1$pred.y==config_c)
+con3 = which(is.na(ver1_r100$Z.truth))
+con4 = which(is.na(ver1$Z.truth))
+ind1 = intersect(con1, con3)
+ind2 = intersect(con2, con4)
+
+df_plot = rbind(Data_Res_Test[ind1,],
+                Data_Res_Test[ind2,]) %>%
   select(starts_with("T")) %>%
-  mutate(version = c(rep("ver1100", length(which(con1&con3))), 
-         rep("ver1400", length(which(con2&con4))))) 
+  mutate(version = c(rep("5 tests", length(ind1)), 
+         rep("6 tests", length(ind2)))) 
 df_plot$version = factor(df_plot$version)
-df_long <- pivot_longer(df_plot[,-1], cols = starts_with("T"), names_to = "Variable", values_to = "Value")
+df_long <- pivot_longer(df_plot, cols = starts_with("T"), names_to = "Variable", values_to = "Value")
 df_long$Variable <- sub("Tvalue_", "", df_long$Variable)
-df_long$Variable = factor(df_long$Variable, levels = name_six_diff[-1])
-ggplot(df_long, aes(x = Variable, y = Value, color = version))+
-  labs(title = paste0("Predicted configuration", config_c, " (not in the table)"))+
-  geom_boxplot(outlier.shape = NA)+
+df_long$Variable = factor(df_long$Variable, levels = name_six_diff)
+ggplot(df_long, aes(x = Variable, y = Value, color = version)) +
+  labs(title = paste0("Predicted configuration", config_c, " (not in the table)")) +
+  geom_boxplot()+
   theme_minimal() +
   ylim(-5,5)+
   scale_fill_brewer(palette = "Set1")+

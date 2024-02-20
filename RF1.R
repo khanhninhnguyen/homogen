@@ -49,7 +49,7 @@ Data_Res_Test <- cbind(List_main[,c("main", "brp", "nearby")],
                        Data_Res_Test0[,7:12]) %>%
   mutate(brp = as.Date(List_main$brp, format="%Y-%m-%d")) 
 
-Data_Res_Test_fillNA <- Data_Res_Test %>%
+Data_Res_Test <- Data_Res_Test %>%
   arrange(main, brp) %>%
   group_by(main, brp) %>%
   fill(Tvalue_GPS_ERA, .direction = "downup") %>%
@@ -100,7 +100,7 @@ a = predictiver_rule_ver2(significance_level,
                           R,
                           prob,
                           keep_config,
-                          remove_var,
+                          remove_var = "G-E",
                           list_name_test,
                           Data_Res_Test_fillNA,
                           path_restest,
@@ -119,10 +119,10 @@ a1 = predictiver_rule_ver4(significance_level, B,
                               Data_Res_Test_fillNA, 
                               path_restest,
                               version = "ver4/")
-write.table(a1, file = paste0(path_restest, "ver4", "/FinalTable.txt"), sep = '\t', quote = FALSE)
+write.table(a1, file = paste0(file_path_Results, "ver4", "/FinalTable.txt"), sep = '\t', quote = FALSE)
 
-# check the similarity between different iteration 
-all_pred = combine_rules(version, 
+# check the similarity between different iteration ------------------------
+all_pred = combine_rules(version = "ver4", 
                         B,
                         file_path_Results,
                         Data_Res_Test,
@@ -130,19 +130,31 @@ all_pred = combine_rules(version,
                         offset,
                         GE, 
                         number_pop)
-Final_table = read.table(file = paste0(file_path_Results, version, "/FinalTable.txt"))
+Final_table = read.table(file = paste0(file_path_Results, version = "ver4", "/FinalTable.txt"))
 z_truth = Final_table$Z.truth
-all_pred$truth = z_truth
-all_pred$iden = apply(all_pred, 1, function(row) {
-  if (is.na(row['truth'])) {
-    return(NA)  # Return NA if the 'truth' value is NA
-  }
-  sum(row[-length(row)] == row['truth'], na.rm = TRUE)
-})
-all_pred$iden = all_pred$iden /11
-table(all_pred$iden)
+# all_pred$truth = z_truth
+# all_pred$iden = apply(all_pred, 1, function(row) {
+#   if (is.na(row['truth'])) {
+#     return(NA)  # Return NA if the 'truth' value is NA
+#   }
+#   sum(row[-length(row)] == row['truth'], na.rm = TRUE)
+# })
+# all_pred$iden = all_pred$iden /7
+# table(all_pred$iden)
 
 for (j in c(2:ncol(all_pred))) {
-  plot_similiar(result = all_pred[which(is.na(z_truth)),c(1,j)], version, names_iter = colnames(all_pred)[c(1,j)])
+  plot_similiar(result = all_pred[which(is.na(z_truth)),c(1,j)], version = "ver4", names_iter = colnames(all_pred)[c(1,j)])
 }
+
+#' consistency between nearby stations 
+all_res = cbind(Data_Res_Test[,c(1:3)], all_pred) 
+
+check_same_value <- function(row) {
+  length(unique(row)) == 1
+}
+
+# Apply the function across the iter columns
+all_res$same_value <- apply(all_res[,4:10], 1, check_same_value)
+
+
 

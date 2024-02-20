@@ -279,7 +279,6 @@ combine_rules <- function(version,
                           offset,
                           GE, 
                           number_pop){
-  version = "original"
   error_list = rep(NA,B)
   for (b in c(1:B)) {
     FinalPred <- readRDS(paste0(file_path_Results,
