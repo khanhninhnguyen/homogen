@@ -370,7 +370,7 @@ ggsave(paste0(path_results,"attribution/pop_significance_level>50.jpg" ),
 
 suspect_case = unique(suspect1, suspect2, suspect3)
 # suspect_case =  which(apply(Data_Res_Test[,4:9], 1, function(x) any(x > 30)))
-suspect_case = which(abs(Data_Res_Test0$Tvalue_GPS_ERA) <1.96)
+suspect_case = c(109:118, 354:363, 463:472, 1635:1644, 1829:1838, 7501:7515, 8754:8763)
 for (i in suspect_case) {
   main_st = Data_Res_Test$main[i] 
   brp_test = Data_Res_Test$brp[i]
@@ -402,11 +402,11 @@ for (i in suspect_case) {
 
 
 # Define variable names and read results 
-ori_col_name <- "Version 1"
-ver1_col_name <- "Version 4"
+ori_col_name <- "Version4a"
+ver1_col_name <- "Version4m"
 title_name = "Results when R = 400"
 
-ori = read.table(file = paste0(file_path_Results, 'ver1/R400', "/FinalTable.txt"))
+ori = read.table(file = paste0(file_path_Results, 'ver4', "/FinalTable.txt"))
 ver1 = read.table(file = paste0(file_path_Results, 'ver4', "/FinalTable.txt"))
 
 ## Create a new dataframe with specified column names

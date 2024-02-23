@@ -116,10 +116,10 @@ a1 = predictiver_rule_ver4(significance_level, B,
                               keep_config,
                               remove_var = NA,
                               list_name_test,
-                              Data_Res_Test_fillNA, 
+                              Data_Res_Test, 
                               path_restest,
-                              version = "ver4/")
-write.table(a1, file = paste0(file_path_Results, "ver4", "/FinalTable.txt"), sep = '\t', quote = FALSE)
+                              version = "ver4b/")
+write.table(a1, file = paste0(file_path_Results, "ver4b", "/FinalTable.txt"), sep = '\t', quote = FALSE)
 
 # check the similarity between different iteration ------------------------
 all_pred = combine_rules(version = "ver4", 
@@ -142,6 +142,7 @@ z_truth = Final_table$Z.truth
 # all_pred$iden = all_pred$iden /7
 # table(all_pred$iden)
 
+all_pred$mean = all_res$voted_value
 for (j in c(2:ncol(all_pred))) {
   plot_similiar(result = all_pred[which(is.na(z_truth)),c(1,j)], version = "ver4", names_iter = colnames(all_pred)[c(1,j)])
 }
@@ -150,11 +151,18 @@ for (j in c(2:ncol(all_pred))) {
 all_res = cbind(Data_Res_Test[,c(1:3)], all_pred) 
 
 check_same_value <- function(row) {
-  length(unique(row)) == 1
+  as.numeric(length(unique(row)) == 1)
+}
+
+find_single_mode <- function(row) {
+  freq <- table(row)
+    return(names(freq)[which.max(freq)])
 }
 
 # Apply the function across the iter columns
 all_res$same_value <- apply(all_res[,4:10], 1, check_same_value)
-
+all_res$voted_value <- apply(all_res[,4:10], 1, find_single_mode)
+all_res$truth = z_truth
+all_res$dd = List_main$dd
 
 
