@@ -35,22 +35,14 @@ remove_cluster <- function(noise_model, Six_Series, List_changes){
     select(Date, GpEp) %>% 
     drop_na()
   
-  length_seg_main <- numeric(length(List_changes$main) - 1)
-  length_seg_main[1] <- sum(main_df$Date >= List_changes$main[1] &
-                              main_df$Date <= List_changes$main[2])
+  list_changes = List_changes$main
+  length_seg <- numeric(length(list_changes) - 1)
+  length_seg[1] <- sum(main_df$Date >= list_changes[1] &
+                              main_df$Date <= list_changes[2])
   
-  for (i in 2:(length(List_changes$main) - 1)) {
-    length_seg_main[i] <- sum(main_df$Date > List_changes$main[i] &
-                                main_df$Date <= List_changes$main[i + 1])
-  }
-  
-  length_seg_nearby <- numeric(length(List_changes$nearby) - 1)
-  length_seg_nearby[1] <- sum(nearby_df$Date >= List_changes$nearby[1] &
-                                nearby_df$Date <= List_changes$nearby[2])
-  
-  for (i in 2:(length(List_changes$nearby) - 1)) {
-    length_seg_nearby[i] <- sum(nearby_df$Date > List_changes$nearby[i] & 
-                                  nearby_df$Date <= List_changes$nearby[i + 1])
+  for (i in 2:(length(list_changes) - 1)) {
+    length_seg[i] <- sum(main_df$Date > list_changes[i] &
+                                main_df$Date <= list_changes[i + 1])
   }
   
   get_cluster <- function(X){
@@ -70,19 +62,18 @@ remove_cluster <- function(noise_model, Six_Series, List_changes){
     return(output)
   }
   
-  check_cluster_main = get_cluster(length_seg_main)
-  check_cluster_nearby = get_cluster(length_seg_nearby)
-  check_cluster = check_cluster_main
+  check_cluster = get_cluster(length_seg)
   
-  ind_cluster_main = which(check_cluster_main==1)
-  ind_cluster_nearby = which(check_cluster_nearby==1)
-  
-  ind_cluster = which(check_cluster_main==1)
   if (all(check_cluster == 0)) {
     Reject = Reject
     Update_List_Changes = List_changes
   } else{
-    
+    ind_cluster = which(check_cluster == 1)
+    if(1 %in% ind_cluster){
+      # remove all changepoint in the clusters close to the begining 
+      
+    }
+        
   }
 
 }
