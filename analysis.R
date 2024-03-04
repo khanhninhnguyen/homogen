@@ -370,7 +370,7 @@ ggsave(paste0(path_results,"attribution/pop_significance_level>50.jpg" ),
 
 suspect_case = unique(suspect1, suspect2, suspect3)
 # suspect_case =  which(apply(Data_Res_Test[,4:9], 1, function(x) any(x > 30)))
-suspect_case = c(109:118, 354:363, 463:472, 1635:1644, 1829:1838, 7501:7515, 8754:8763)
+suspect_case = c(4626,6165,5722,5574,7073,8052)
 for (i in suspect_case) {
   main_st = Data_Res_Test$main[i] 
   brp_test = Data_Res_Test$brp[i]
