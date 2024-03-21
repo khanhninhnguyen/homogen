@@ -50,7 +50,7 @@ GLS <- function(phi, theta, var.t, design.matrix){
   var.t.na = var.t[ind1]
   var.matrix = diag(sqrt(var.t.na))
   cor.matrix = cor_matrix(phi, theta, n.full = nrow(design.matrix), n.true = nrow(na.omit(design.matrix)))
-  if(phi==0&theta==0){
+  if(phi==0 & theta==0){
     cov.var= diag(var.t.na)
   }else{
     cov.var0 = var.matrix  %*%  cor.matrix 
@@ -96,7 +96,7 @@ chooseparam <- function(noise.model, arima.fit){
   return(list(phi = phi, theta = theta))
 }
 
-FGLS1 <- function(design.m, tol, day.list, noise.model, length.wind0){
+FGLS1 <- function(design.m, , day.list, noise.model, length.wind0){
   start_time <- Sys.time()
   resi0 = rep(NA, nrow(design.m))
   ind1 = which(is.na(design.m$signal)==FALSE)

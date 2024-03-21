@@ -9,7 +9,7 @@
 ####### Test result - remove when finish ##################
   
 significance_level = 0.05
-B = 20
+B = 50
 offset=0
 GE=0
 number_pop = 3
@@ -21,9 +21,8 @@ prob <- c(0.18225,0.010125,0.010125,0.010125,0.0005625,0.0005625,0.010125,0.0005
           0.00225,0.00225,0.0405,0.000125,0.000125,0.00225,0.000125,0.000125,0.00225,0.00225,
           0.0405,0.00225,0.000125,0.00225,0.000125,0.000125,0.00225,0.000125)
 keep_config <- c(1:3,6:15,17,19:24,26,28:30,33:40,43,46:49,52)
-version = "ver1/400/"
 
-remove_var = "G-E"
+# remove_var = "G-E"
 list_name_test = c("G-E", "G-G'", "G-E'", "E-E'", "G'-E'","G'-E")
 
 library(caret)
@@ -34,7 +33,7 @@ path_restest <- paste0(path_results,"attribution/FGLS_comb/")
 file_path_Results=paste0(path_results,'attribution/predictive_rule/')
 
 
-#' read test results 
+# read test results  -------------------
 List_main = read.table(file = paste0(path_results,"list_selected_nmin200_10nearby.txt"), 
                        header = TRUE, 
                        stringsAsFactors = FALSE) 
@@ -56,41 +55,9 @@ Data_Res_Test <- Data_Res_Test %>%
   ungroup() %>%
   filter(abs(Tvalue_GPS_ERA)>1.96)
 
-#' remove the err cases
-#' 
-# find_bug <- function(main_beg_new, main_end_new, nearby_beg_new, nearby_end_new){
-#   cond = as.integer((main_beg_new > nearby_beg_new) & 
-#                       (main_end_new > nearby_end_new))
-#   return(cond)
-# }
-# fix_case <- List_main %>% 
-#   rowwise() %>%
-#   mutate(Fix = find_bug(main_beg_new,
-#                         main_end_new,
-#                         nearby_beg_new,
-#                         nearby_end_new))
 
-# Data_Res_Test <- Data_Res_Test[which(fix_case$Fix == 0),]
-# rownames(Data_Res_Test) <- NULL
-
-# List_main <- List_main[which(fix_case$Fix == 0),]
-# rownames(List_main) <- NULL
-
-# Data_Res_Test_fillNA <- Data_Res_Test_fillNA[which(fix_case$Fix == 0),]
-# 
-# a = predictiver_rule_original(significance_level, B,
-#                   offset,
-#                   GE,
-#                   number_pop,
-#                   R,
-#                   prob,
-#                   keep_config,
-#                   remove_var,
-#                   list_name_test,
-#                   Data_Res_Test_fillNA,
-#                   path_restest,
-#                   version = "original/R400/")
-# write.table(a, file = paste0(file_path_Results, 'original/R400/', "/FinalTable.txt"), sep = '\t', quote = FALSE)
+# run the training of predictive rule -------------------------------------
+version = "ver1/400/"
 
 a = predictiver_rule_ver2(significance_level, 
                           B,
@@ -118,51 +85,117 @@ a1 = predictiver_rule_ver4(significance_level, B,
                               list_name_test,
                               Data_Res_Test, 
                               path_restest,
-                              version = "ver4b/")
-write.table(a1, file = paste0(file_path_Results, "ver4b", "/FinalTable.txt"), sep = '\t', quote = FALSE)
+                              version = "ver4/")
+write.table(a1, file = paste0(file_path_Results, "ver4", "/FinalTable.txt"), sep = '\t', quote = FALSE)
 
-# check the similarity between different iteration ------------------------
-all_pred = combine_rules(version = "ver4", 
-                        B,
-                        file_path_Results,
-                        Data_Res_Test,
-                        significance_level,
-                        offset,
-                        GE, 
-                        number_pop)
-Final_table = read.table(file = paste0(file_path_Results, version = "ver4", "/FinalTable.txt"))
-z_truth = Final_table$Z.truth
-# all_pred$truth = z_truth
-# all_pred$iden = apply(all_pred, 1, function(row) {
-#   if (is.na(row['truth'])) {
-#     return(NA)  # Return NA if the 'truth' value is NA
-#   }
-#   sum(row[-length(row)] == row['truth'], na.rm = TRUE)
-# })
-# all_pred$iden = all_pred$iden /7
-# table(all_pred$iden)
 
-all_pred$mean = all_res$voted_value
-for (j in c(2:ncol(all_pred))) {
-  plot_similiar(result = all_pred[which(is.na(z_truth)),c(1,j)], version = "ver4", names_iter = colnames(all_pred)[c(1,j)])
+# give the final models to predict ------------------------
+
+version = "ver4"
+error_list = rep(NA,B)
+
+for (b in c(1:B)) {
+  FinalPred <- readRDS(paste0(file_path_Results,
+                              version,
+                              "/Res.pred_",
+                              b,
+                              significance_level, 
+                              offset, 
+                              GE, 
+                              number_pop,
+                              ".rds"))
+  error_list[b] = FinalPred$err.tot
+}
+List_names_final = FinalPred$modrf$coefnames
+list_selected_rule = which(error_list == min(error_list))
+list_selected_rule
+
+all_model <- list()
+set.seed(1)
+for (i in 1:length(list_selected_rule)) {
+  FinalPred_i <- readRDS(paste0(file_path_Results,
+                                version,
+                                "/Res.pred_",
+                                list_selected_rule[i],
+                                significance_level, 
+                                offset, 
+                                GE, 
+                                number_pop,
+                                ".rds"))
+  Model_i <- FinalPred_i$modrf
+  all_model[[paste0("model",i)]] <- Model_i
 }
 
-#' consistency between nearby stations 
-all_res = cbind(Data_Res_Test[,c(1:3)], all_pred) 
+ind <- rep(NA, 24)
+Res <- rep(NA, 24)
 
-check_same_value <- function(row) {
-  as.numeric(length(unique(row)) == 1)
+set.seed(1)
+
+for (j in c(1:24)) {
+  Modi = all_model[[paste0("model",list_selected_rule[j])]] 
+  ind[j] = predict(Modi, newdata = X)
+  Res[j] = config_list_final[ind[j]]
+}
+Res
+table(Res)
+table(ind)
+
+save(all_model, file = paste0(path_results, "RF_models.RData"))
+
+# list_config = readRDS(paste0(file_path_Results,
+#                              version,
+#                              "/List_config.rds"))
+# config_list_final = as.numeric(rownames(list_config))
+# 
+# if(length(List_names_final)<6){
+#   RealData_x <- Data_Res_Test[,tail(names(Data_Res_Test), 5)]
+# }else{
+#   RealData_x <- Data_Res_Test[,tail(names(Data_Res_Test), 6)]
+# }
+# colnames(RealData_x) <- List_names_final
+# 
+# All_pred <- as.data.frame(matrix(NA,
+#                                  nrow = nrow(RealData_x),
+#                                  ncol = length(list_selected_rule)))
+# for (i in 1:length(list_selected_rule)) {
+#   FinalPred_i <- readRDS(paste0(file_path_Results,
+#                                 version,
+#                                 "/Res.pred_",
+#                                 list_selected_rule[i],
+#                                 significance_level, 
+#                                 offset, 
+#                                 GE, 
+#                                 number_pop,
+#                                 ".rds"))
+#   Model_i <- FinalPred_i$modrf
+#   RealData_predy_i <- predict(Model_i, newdata = RealData_x[1,]) 
+#   All_pred[,i] <- config_list_final[RealData_predy_i]
+# }
+
+
+
+# apply the final models to test results  ---------------------------------
+
+pred_rules = get(load( file = paste0(path_results, "RF_models.RData")))
+
+X <- Data_Res_Test[,4:9] %>%
+  setNames( c("GE", "GGp", "GEp", "EEp", "GpEp", "GpE"))
+  
+
+for (i in c(1:length(pred_rules))) {
+  
+  Model_i = pred_rules[[paste0("model",i)]]
+  predict_i = predict(Model_i, newdata = X)
+  
+  Data_Res_Test[paste("iter", i)] = predict_i
+  
 }
 
-find_single_mode <- function(row) {
-  freq <- table(row)
-    return(names(freq)[which.max(freq)])
-}
 
-# Apply the function across the iter columns
-all_res$same_value <- apply(all_res[,4:10], 1, check_same_value)
-all_res$voted_value <- apply(all_res[,4:10], 1, find_single_mode)
-all_res$truth = z_truth
-all_res$dd = List_main$dd
+
+
+
+
+
 
 

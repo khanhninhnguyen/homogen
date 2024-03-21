@@ -84,7 +84,7 @@ predictiver_rule_ver4 <- function(significance_level,
   
   # run the bootstrap 
   
-  set.seed(21)
+  set.seed(1)
   
   error_RF <- rep(NA, B)
   
